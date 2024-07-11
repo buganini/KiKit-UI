@@ -2,7 +2,6 @@
 from kikit import panelize
 from kikit.units import mm
 import pcbnew
-from shapely import MultiPoint, affinity
 
 import sys
 sys.path.append("/Users/buganini/repo/buganini/PUI")
@@ -20,6 +19,56 @@ class PCB():
         self.y = 0
         self.rotate = 0
 
+    def moveUp(self):
+        if self.rotate % 4 == 0:
+            self.y -= 1 * mm
+        elif self.rotate % 4 == 1:
+            self.x -= 1 * mm
+        elif self.rotate % 4 == 2:
+            self.y -= 1 * mm
+        elif self.rotate % 4 == 3:
+            self.x -= 1 * mm
+
+    def moveLeft(self):
+        if self.rotate % 4 == 0:
+            self.x -= 1 * mm
+        elif self.rotate % 4 == 1:
+            self.y -= 1 * mm
+        elif self.rotate % 4 == 2:
+            self.x -= 1 * mm
+        elif self.rotate % 4 == 3:
+            self.y -= 1 * mm
+
+    def moveRight(self):
+        if self.rotate % 4 == 0:
+            self.x += 1 * mm
+        elif self.rotate % 4 == 1:
+            self.y += 1 * mm
+        elif self.rotate % 4 == 2:
+            self.x += 1 * mm
+        elif self.rotate % 4 == 3:
+            self.y += 1 * mm
+
+    def moveDown(self):
+        if self.rotate % 4 == 0:
+            self.y += 1 * mm
+        elif self.rotate % 4 == 1:
+            self.x += 1 * mm
+        elif self.rotate % 4 == 2:
+            self.y += 1 * mm
+        elif self.rotate % 4 == 3:
+            self.x += 1 * mm
+
+    @property
+    def bbox(self):
+        x1, y1, x2, y2 = self.x, self.y, self.x+self.width, self.y+self.height
+        if self.rotate % 4 == 1:
+            x1, y1, x2, y2 = y1, x2, y2, x1
+        elif self.rotate % 4 == 2:
+            x1, y1, x2, y2 = x2, y2, x1, y1
+        elif self.rotate % 4 == 3:
+            x1, y1, x2, y2 = y2, x1, y1, x2
+        return x1, y1, x2, y2
 class UI(Application):
     def __init__(self):
         super().__init__()
@@ -71,19 +120,21 @@ class UI(Application):
             self.state.output += ".kicad_pcb"
         panel = panelize.Panel(self.state.output)
         for pcb in pcbs:
-            x, y = pcb.x, pcb.y
-            if pcb.rotate % 4 == 1:
-                x, y = -y, x
+            x1, y1, x2, y2 = pcb.bbox
+            if pcb.rotate % 4 == 0:
+                origin = panelize.Origin.TopLeft
+            elif pcb.rotate % 4 == 1:
+                origin = panelize.Origin.BottomRight
             elif pcb.rotate % 4 == 2:
-                x, y = -x, -y
+                origin = panelize.Origin.TopRight
             elif pcb.rotate % 4 == 3:
-                x, y = y, -x
+                origin = panelize.Origin.BottomLeft
             panel.appendBoard(
                 pcb.file,
-                pcbnew.VECTOR2I(pcbs[0].pos_x + x, pcbs[0].pos_y + y),
-                origin=panelize.Origin.TopLeft,
+                pcbnew.VECTOR2I(pcbs[0].pos_x + x1, pcbs[0].pos_y + y1),
+                origin=origin,
                 tolerance=panelize.fromMm(1),
-                rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate*90, pcbnew.DEGREES_T),
+                rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate * -90, pcbnew.DEGREES_T),
                 inheritDrc=False
             )
 
@@ -96,34 +147,33 @@ class UI(Application):
         self.state.focus = pcb
 
     def moveUp(self, pcb):
-        pcb.y -= 1 * mm
+        pcb.moveUp()
         self.state()
 
     def moveLeft(self, pcb):
-        pcb.x -= 1 * mm
+        pcb.moveLeft()
         self.state()
 
     def moveRight(self, pcb):
-        pcb.x += 1 * mm
+        pcb.moveRight()
         self.state()
 
     def moveDown(self, pcb):
-        pcb.y += 1 * mm
+        pcb.moveDown()
         self.state()
 
     def rotateCCW(self, pcb):
-        pcb.rotate -= 1
+        pcb.rotate += 1
         self.state()
 
     def rotateCW(self, pcb):
-        pcb.rotate += 1
+        pcb.rotate -= 1
         self.state()
 
     def drawPCB(self, canvas, pcb, highlight):
         stroke = 0x00FFFF if highlight else 0x0000FF
-        rect = MultiPoint([(pcb.x, pcb.y), (pcb.x + pcb.width, pcb.y + pcb.height)])
-        rect = affinity.rotate(rect, pcb.rotate*90, origin='center', use_radians=False)
-        canvas.drawRect(rect.geoms[0].x * self.state.scale, rect.geoms[0].y * self.state.scale, rect.geoms[1].x * self.state.scale, rect.geoms[1].y * self.state.scale, stroke=stroke)
+        x1, y1, x2, y2 = pcb.bbox
+        canvas.drawRect(x1 * self.state.scale, y1 * self.state.scale, x2 * self.state.scale, y2 * self.state.scale, stroke=stroke)
 
     def painter(self, canvas, pcbs):
         for pcb in pcbs:
