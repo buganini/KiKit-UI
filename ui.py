@@ -61,20 +61,22 @@ class PCB():
 
     @property
     def bbox(self):
-        x1, y1, x2, y2 = self.x, self.y, self.x+self.width, self.y+self.height
-        if self.rotate % 4 == 1:
-            x1, y1, x2, y2 = y1, x2, y2, x1
+        if self.rotate % 4 == 0:
+            x1, y1, x2, y2 = self.x, self.y, self.x+self.width, self.y+self.height
+        elif self.rotate % 4 == 1:
+            x1, y1, x2, y2 = self.x, self.y, self.x+self.height, self.y-self.width
         elif self.rotate % 4 == 2:
-            x1, y1, x2, y2 = x2, y2, x1, y1
+            x1, y1, x2, y2 = self.x, self.y, self.x-self.width, self.y-self.height
         elif self.rotate % 4 == 3:
-            x1, y1, x2, y2 = y2, x1, y1, x2
+            x1, y1, x2, y2 = self.x, self.y, self.x-self.height, self.y+self.width
         return x1, y1, x2, y2
+
 class UI(Application):
     def __init__(self):
         super().__init__()
         self.state = State()
         self.state.pcb = []
-        self.state.scale = 1
+        self.state.scale = (1, 0, 0)
         self.state.output = ""
         self.state.canvas_width = 800
         self.state.canvas_height = 600
@@ -84,7 +86,7 @@ class UI(Application):
         for boardfile in inputs:
             pcb = PCB(boardfile)
             if len(self.state.pcb) > 0:
-                pcb.x = self.state.pcb[0].x + self.state.pcb[0].width + 10 * mm
+                pcb.x = self.state.pcb[0].x + self.state.pcb[0].width + 1 * mm
             self.state.pcb.append(pcb)
 
         self.autoScale()
@@ -101,7 +103,7 @@ class UI(Application):
 
         sw = self.state.canvas_width / mw
         sh = self.state.canvas_height / mh
-        self.state.scale = min(sw, sh) / 2
+        self.state.scale = (min(sw, sh) / 2, mw/2, mh/2)
 
     def addPCB(self):
         boardfile = OpenFileDialog("Open PCB", "KiCad PCB (*.kicad_pcb)")
@@ -121,20 +123,12 @@ class UI(Application):
         panel = panelize.Panel(self.state.output)
         for pcb in pcbs:
             x1, y1, x2, y2 = pcb.bbox
-            if pcb.rotate % 4 == 0:
-                origin = panelize.Origin.TopLeft
-            elif pcb.rotate % 4 == 1:
-                origin = panelize.Origin.BottomRight
-            elif pcb.rotate % 4 == 2:
-                origin = panelize.Origin.TopRight
-            elif pcb.rotate % 4 == 3:
-                origin = panelize.Origin.BottomLeft
             panel.appendBoard(
                 pcb.file,
                 pcbnew.VECTOR2I(pcbs[0].pos_x + x1, pcbs[0].pos_y + y1),
-                origin=origin,
+                origin=panelize.Origin.TopLeft,
                 tolerance=panelize.fromMm(1),
-                rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate * -90, pcbnew.DEGREES_T),
+                rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate * 90, pcbnew.DEGREES_T),
                 inheritDrc=False
             )
 
@@ -173,7 +167,8 @@ class UI(Application):
     def drawPCB(self, canvas, pcb, highlight):
         stroke = 0x00FFFF if highlight else 0x0000FF
         x1, y1, x2, y2 = pcb.bbox
-        canvas.drawRect(x1 * self.state.scale, y1 * self.state.scale, x2 * self.state.scale, y2 * self.state.scale, stroke=stroke)
+        scale, offx, offy = self.state.scale
+        canvas.drawRect((offx + x1) * scale, (offy + y1) * scale, (offx + x2) * scale, (offy + y2) * scale, stroke=stroke)
 
     def painter(self, canvas, pcbs):
         for pcb in pcbs:
