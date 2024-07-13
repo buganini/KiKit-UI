@@ -20,44 +20,16 @@ class PCB():
         self.rotate = 0
 
     def moveUp(self):
-        if self.rotate % 4 == 0:
-            self.y -= 1 * mm
-        elif self.rotate % 4 == 1:
-            self.x -= 1 * mm
-        elif self.rotate % 4 == 2:
-            self.y -= 1 * mm
-        elif self.rotate % 4 == 3:
-            self.x -= 1 * mm
+        self.y -= 1 * mm
 
     def moveLeft(self):
-        if self.rotate % 4 == 0:
-            self.x -= 1 * mm
-        elif self.rotate % 4 == 1:
-            self.y -= 1 * mm
-        elif self.rotate % 4 == 2:
-            self.x -= 1 * mm
-        elif self.rotate % 4 == 3:
-            self.y -= 1 * mm
+        self.x -= 1 * mm
 
     def moveRight(self):
-        if self.rotate % 4 == 0:
-            self.x += 1 * mm
-        elif self.rotate % 4 == 1:
-            self.y += 1 * mm
-        elif self.rotate % 4 == 2:
-            self.x += 1 * mm
-        elif self.rotate % 4 == 3:
-            self.y += 1 * mm
+        self.x += 1 * mm
 
     def moveDown(self):
-        if self.rotate % 4 == 0:
-            self.y += 1 * mm
-        elif self.rotate % 4 == 1:
-            self.x += 1 * mm
-        elif self.rotate % 4 == 2:
-            self.y += 1 * mm
-        elif self.rotate % 4 == 3:
-            self.x += 1 * mm
+        self.y += 1 * mm
 
     @property
     def bbox(self):
