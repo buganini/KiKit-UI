@@ -167,6 +167,8 @@ class UI(Application):
                 if not output.endswith(".kicad_pcb"):
                     output += ".kicad_pcb"
                 self.state.output = output
+            else:
+                return
             pos_x = pcbs[0].pos_x
             pos_y = pcbs[0].pos_y
 
