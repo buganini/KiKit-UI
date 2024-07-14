@@ -90,7 +90,7 @@ class UI(Application):
 
         sw = self.state.canvas_width / mw
         sh = self.state.canvas_height / mh
-        self.state.scale = (min(sw, sh) / 8, mw/2, mh/2)
+        self.state.scale = (min(sw, sh) / 2, mw/2, mh/2)
 
     def addPCB(self):
         boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
@@ -347,7 +347,7 @@ class UI(Application):
             if cut_method == "mb":
                 for line in cuts:
                     i = 0
-                    while i * mb_spacing < line.length:
+                    while i * mb_spacing <= line.length:
                         p = line.interpolate(i*mb_spacing)
                         x, y = self.toCanvas(p.x, p.y)
                         canvas.drawEllipse(x, y, mb_diameter/2*scale, mb_diameter/2*scale, stroke=0xFFFF00)
