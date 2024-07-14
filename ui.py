@@ -52,13 +52,15 @@ class UI(Application):
         self.state.scale = (1, 0, 0)
         self.state.output = ""
         self.state.canvas_width = 800
-        self.state.canvas_height = 600
+        self.state.canvas_height = 800
         self.state.focus = None
         self.state.cuts = []
         self.state.substrates = []
         self.state.cut_method = "mb"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
+        self.state.frame_width = 100
+        self.state.frame_height = 100
 
         self.mousepos = None
         self.mouse_dragging = None
@@ -226,9 +228,15 @@ class UI(Application):
         canvas.drawRect(x1, y1, x2, y2, stroke=stroke)
 
     def painter(self, canvas):
+        scale, offx, offy = self.state.scale
         pcbs = self.state.pcb
         cuts = self.state.cuts
         boardSubstrate = self.state.boardSubstrate
+
+        x1 = 0
+        y1 = 0
+        x2, y2 = self.toCanvas(self.state.frame_width * mm, self.state.frame_height * mm)
+        canvas.drawRect(x1, y1, x2, y2, stroke=0x333333)
 
         if boardSubstrate:
             exterior = boardSubstrate.exterior()
@@ -262,7 +270,6 @@ class UI(Application):
             cut_method = self.state.cut_method
             mb_diameter = self.state.mb_diameter
             mb_spacing = self.state.mb_spacing
-            scale, offx, offy = self.state.scale
             if cut_method == "mb":
                 for line in cuts:
                     i = 0
@@ -285,7 +292,6 @@ class UI(Application):
                 for i,pcb in enumerate(self.state.pcb):
                     Label(f"{i+1}. {pcb.file}").grid(row=i, column=0)
 
-
                 with HBox():
                     self.state.pcb
                     self.state.cuts
@@ -306,6 +312,13 @@ class UI(Application):
                             with HBox():
                                 RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
                                 RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+
+                            with HBox():
+                                Label("Frame")
+                                TextField(self.state("frame_width"))
+                                TextField(self.state("frame_height"))
+                                Label("(mm)")
+
 
                             if self.state.focus:
                                 with HBox():
