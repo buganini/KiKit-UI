@@ -1,12 +1,15 @@
 #!/usr/bin/env /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
 from kikit import panelize
 from kikit.units import mm
-from shapely import Point, Polygon, MultiPolygon
+from shapely import Point, Polygon, MultiPolygon, LineString
 import pcbnew
 
 import sys
 sys.path.append("/Users/buganini/repo/buganini/PUI")
 from PUI.PySide6 import *
+
+def nbbox(x1, y1, x2, y2):
+    return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
 
 class PCB():
     def __init__(self, boardfile):
@@ -61,6 +64,8 @@ class UI(Application):
         self.state.mb_spacing = 0.75 * mm
         self.state.frame_width = 100
         self.state.frame_height = 100
+        self.state.x_spacing = 5
+        self.state.y_spacing = 5
 
         self.mousepos = None
         self.mouse_dragging = None
@@ -142,6 +147,86 @@ class UI(Application):
 
         if save:
             panel.save()
+
+    def snap_top(self):
+        todo = list(self.state.pcb)
+        todo.sort(key=lambda pcb: (pcb.y, pcb.x))
+        most = min(todo, key=lambda pcb: pcb.y)
+        todo = [pcb for pcb in todo if pcb is not most]
+        done = [most]
+        for pcb in todo:
+            ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            for d in done:
+                bx1, by1, bx2, by2 = nbbox(*d.bbox)
+                if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
+                    pcb.y = by2 + self.state.y_spacing * mm
+                    done.append(pcb)
+                    break
+            else:
+                pcb.y = most.y
+                done.append(pcb)
+        self.autoScale()
+        self.build()
+
+    def snap_bottom(self):
+        todo = list(self.state.pcb)
+        todo.sort(key=lambda pcb: (pcb.y, pcb.x))
+        most = max(todo, key=lambda pcb: pcb.y+pcb.height)
+        todo = [pcb for pcb in todo if pcb is not most]
+        done = [most]
+        for pcb in todo:
+            ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            for d in done:
+                bx1, by1, bx2, by2 = nbbox(*d.bbox)
+                if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
+                    pcb.y = by1 - pcb.height - self.state.y_spacing * mm
+                    done.append(pcb)
+                    break
+            else:
+                pcb.y = most.y + most.height - pcb.height
+                done.append(pcb)
+        self.autoScale()
+        self.build()
+
+    def snap_left(self):
+        todo = list(self.state.pcb)
+        todo.sort(key=lambda pcb: (pcb.y, pcb.x))
+        most = min(todo, key=lambda pcb: pcb.x)
+        todo = [pcb for pcb in todo if pcb is not most]
+        done = [most]
+        for pcb in todo:
+            ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            for d in done:
+                bx1, by1, bx2, by2 = nbbox(*d.bbox)
+                if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
+                    pcb.x = bx2 + self.state.x_spacing * mm
+                    done.append(pcb)
+                    break
+            else:
+                pcb.x = most.x
+                done.append(pcb)
+        self.autoScale()
+        self.build()
+
+    def snap_right(self):
+        todo = list(self.state.pcb)
+        todo.sort(key=lambda pcb: (pcb.y, pcb.x))
+        most = max(todo, key=lambda pcb: pcb.x+pcb.width)
+        todo = [pcb for pcb in todo if pcb is not most]
+        done = [most]
+        for pcb in todo:
+            ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            for d in done:
+                bx1, by1, bx2, by2 = nbbox(*d.bbox)
+                if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
+                    pcb.x = bx1 - pcb.width - self.state.x_spacing * mm
+                    done.append(pcb)
+                    break
+            else:
+                pcb.x = most.x + most.width - pcb.width
+                done.append(pcb)
+        self.autoScale()
+        self.build()
 
     def rotateCCW(self):
         pcb = self.state.focus
@@ -287,7 +372,7 @@ class UI(Application):
                     canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
 
     def content(self):
-        with Window():
+        with Window(size=(1300, 768)):
             with VBox():
                 for i,pcb in enumerate(self.state.pcb):
                     Label(f"{i+1}. {pcb.file}").grid(row=i, column=0)
@@ -318,6 +403,18 @@ class UI(Application):
                                 TextField(self.state("frame_width"))
                                 TextField(self.state("frame_height"))
                                 Label("(mm)")
+
+                            with Grid():
+                                r = 0
+
+                                Button("Snap Top").grid(row=r, column=0).click(self.snap_top)
+                                TextField(self.state("x_spacing")).layout(width=100).grid(row=r, column=1)
+                                Button("Snap Bottom").grid(row=r, column=2).click(self.snap_bottom)
+                                r += 1
+
+                                Button("Snap Left").grid(row=r, column=0).click(self.snap_left)
+                                TextField(self.state("y_spacing")).layout(width=100).grid(row=r, column=1)
+                                Button("Snap Right").grid(row=r, column=2).click(self.snap_right)
 
 
                             if self.state.focus:
