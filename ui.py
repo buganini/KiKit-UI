@@ -1,7 +1,7 @@
 #!/usr/bin/env /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
 from kikit import panelize
 from kikit.units import mm
-from shapely import Point, Polygon
+from shapely import Point, Polygon, MultiPolygon
 import pcbnew
 
 import sys
@@ -55,6 +55,7 @@ class UI(Application):
         self.state.canvas_height = 600
         self.state.focus = None
         self.state.cuts = []
+        self.state.substrates = []
         self.state.cut_method = "mb"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
@@ -127,6 +128,7 @@ class UI(Application):
         cuts = panel.buildFullTabs(cutoutDepth=3*mm)
         if not save:
             self.state.cuts = cuts
+            self.state.boardSubstrate = panel.boardSubstrate
 
         cut_method = self.state.cut_method
         if cut_method == "mb":
@@ -193,7 +195,7 @@ class UI(Application):
         self.mousepos = e.x, e.y
 
     def drawPCB(self, canvas, pcb, highlight):
-        stroke = 0x00FFFF if highlight else 0x0000FF
+        stroke = 0x00FFFF if highlight else 0x777777
         x1, y1, x2, y2 = pcb.bbox
         x1, y1 = self.toCanvas(x1, y1)
         x2, y2 = self.toCanvas(x2, y2)
@@ -202,6 +204,26 @@ class UI(Application):
     def painter(self, canvas):
         pcbs = self.state.pcb
         cuts = self.state.cuts
+        boardSubstrate = self.state.boardSubstrate
+
+        if boardSubstrate:
+            exterior = boardSubstrate.exterior()
+            if isinstance(exterior, MultiPolygon):
+                for polygon in exterior.geoms:
+                    coords = polygon.exterior.coords
+                    for i in range(1, len(coords)):
+                        x1, y1 = self.toCanvas(coords[i-1][0], coords[i-1][1])
+                        x2, y2 = self.toCanvas(coords[i][0], coords[i][1])
+                        canvas.drawLine(x1, y1, x2, y2, color=0x555555)
+            elif isinstance(exterior, Polygon):
+                coords = exterior.exterior.coords
+                for i in range(1, len(coords)):
+                    x1, y1 = self.toCanvas(coords[i-1][0], coords[i-1][1])
+                    x2, y2 = self.toCanvas(coords[i][0], coords[i][1])
+                    canvas.drawLine(x1, y1, x2, y2, color=0x555555)
+            else:
+                print("Unhandled board substrate exterior", exterior)
+
         for pcb in pcbs:
             if pcb is self.state.focus:
                 continue
