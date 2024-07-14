@@ -282,33 +282,39 @@ class UI(Application):
     def content(self):
         with Window():
             with VBox():
-                with HBox():
-                    Button("Add PCB").click(self.addPCB)
-                    if self.state.focus:
-                        Button("CCW").click(self.rotateCCW)
-                        Button("CW").click(self.rotateCW)
-                    Spacer()
-                    if self.state.pcb:
-                        RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
-                        RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
-                        Button("Save").click(self.build, True)
-
                 for i,pcb in enumerate(self.state.pcb):
                     Label(f"{i+1}. {pcb.file}").grid(row=i, column=0)
 
-                self.state.pcb
-                self.state.cuts
-                self.state.cut_method
-                self.state.mb_diameter
-                self.state.mb_spacing
-                (Canvas(self.painter)
-                    .mousedown(self.mousedown)
-                    .mouseup(self.mouseup)
-                    .mousemove(self.mousemove)
-                    .layout(width=self.state.canvas_width, height=self.state.canvas_height)
-                    .style(bgColor=0x000000))
 
-                Spacer()
+                with HBox():
+                    self.state.pcb
+                    self.state.cuts
+                    self.state.cut_method
+                    self.state.mb_diameter
+                    self.state.mb_spacing
+                    (Canvas(self.painter)
+                        .mousedown(self.mousedown)
+                        .mouseup(self.mouseup)
+                        .mousemove(self.mousemove)
+                        .layout(width=self.state.canvas_width, height=self.state.canvas_height)
+                        .style(bgColor=0x000000))
+
+                    with VBox():
+                        Button("Add PCB").click(self.addPCB)
+
+                        if self.state.pcb:
+                            with HBox():
+                                RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
+                                RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+
+                            if self.state.focus:
+                                with HBox():
+                                    Button("CCW").click(self.rotateCCW)
+                                    Button("CW").click(self.rotateCW)
+
+                            Spacer()
+
+                            Button("Save").click(self.build, True)
 
 ui = UI()
 ui.run()
