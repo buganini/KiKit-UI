@@ -53,6 +53,10 @@ class UI(Application):
         self.state.canvas_width = 800
         self.state.canvas_height = 600
         self.state.focus = None
+        self.state.cuts = []
+        self.state.cut_method = "mb"
+        self.state.mb_diameter = 0.5 * mm
+        self.state.mb_spacing = 0.75 * mm
 
         inputs = sys.argv[1:]
         for boardfile in inputs:
@@ -62,6 +66,7 @@ class UI(Application):
             self.state.pcb.append(pcb)
 
         self.autoScale()
+        self.build()
 
     def autoScale(self):
         mw = 0
@@ -84,14 +89,18 @@ class UI(Application):
             pcb.x = self.state.pcb[0].x + 10 * mm
         self.state.pcb.append(pcb)
         self.autoScale()
+        self.build()
 
-    def save(self):
+    def build(self, save=False):
         pcbs = self.state.pcb
         if len(pcbs) == 0:
             return
-        self.state.output = SaveFile(self.state.output, "KiCad PCB (*.kicad_pcb)")
-        if not self.state.output.endswith(".kicad_pcb"):
-            self.state.output += ".kicad_pcb"
+
+        if save:
+            self.state.output = SaveFile(self.state.output, "KiCad PCB (*.kicad_pcb)")
+            if not self.state.output.endswith(".kicad_pcb"):
+                self.state.output += ".kicad_pcb"
+
         panel = panelize.Panel(self.state.output)
         for pcb in pcbs:
             x1, y1, x2, y2 = pcb.bbox
@@ -104,37 +113,45 @@ class UI(Application):
                 inheritDrc=False
             )
 
-        cuts = panel.buildTabsFromAnnotations(fillet=1*mm)
-        panel.makeMouseBites(cuts, diameter=0.5 * mm, spacing=0.75 * mm, offset=0 * mm, prolongation=0 * mm)
+        panel.buildPartitionLineFromBB()
+        cuts = panel.buildFullTabs(cutoutDepth=3*mm)
+        self.state.cuts = cuts
 
-        panel.save()
+        cut_method = self.state.cut_method
+        if cut_method == "mb":
+            panel.makeMouseBites(cuts, diameter=self.state.mb_diameter, spacing=self.state.mb_spacing, offset=0 * mm, prolongation=0 * mm)
+        if cut_method == "vc":
+            panel.makeVCuts(cuts)
+
+        if save:
+            panel.save()
 
     def setFocus(self, pcb):
         self.state.focus = pcb
 
     def moveUp(self, pcb):
         pcb.moveUp()
-        self.state()
+        self.build()
 
     def moveLeft(self, pcb):
         pcb.moveLeft()
-        self.state()
+        self.build()
 
     def moveRight(self, pcb):
         pcb.moveRight()
-        self.state()
+        self.build()
 
     def moveDown(self, pcb):
         pcb.moveDown()
-        self.state()
+        self.build()
 
     def rotateCCW(self, pcb):
         pcb.rotate += 1
-        self.state()
+        self.build()
 
     def rotateCW(self, pcb):
         pcb.rotate -= 1
-        self.state()
+        self.build()
 
     def drawPCB(self, canvas, pcb, highlight):
         stroke = 0x00FFFF if highlight else 0x0000FF
@@ -142,7 +159,9 @@ class UI(Application):
         scale, offx, offy = self.state.scale
         canvas.drawRect((offx + x1) * scale, (offy + y1) * scale, (offx + x2) * scale, (offy + y2) * scale, stroke=stroke)
 
-    def painter(self, canvas, pcbs):
+    def painter(self, canvas):
+        pcbs = self.state.pcb
+        cuts = self.state.cuts
         for pcb in pcbs:
             if pcb is self.state.focus:
                 continue
@@ -153,13 +172,32 @@ class UI(Application):
                 continue
             self.drawPCB(canvas, pcb, True)
 
+        cut_method = self.state.cut_method
+        mb_diameter = self.state.mb_diameter
+        mb_spacing = self.state.mb_spacing
+        scale, offx, offy = self.state.scale
+        if cut_method == "mb":
+            for line in cuts:
+                i = 0
+                while i * mb_spacing < line.length:
+                    p = line.interpolate(i*mb_spacing)
+                    canvas.drawEllipse((offx + p.x - pcbs[0].pos_x) * scale, (offy + p.y - pcbs[0].pos_y) * scale, mb_diameter/2*scale, mb_diameter/2*scale, stroke=0xFFFF00)
+                    i += 1
+        if cut_method == "vc":
+            for line in cuts:
+                p1 = line.coords[0]
+                p2 = line.coords[-1]
+                canvas.drawLine((offx + p1[0] - pcbs[0].pos_x) * scale, (offy + p1[1] - pcbs[0].pos_y) * scale, (offx + p2[0] - pcbs[0].pos_x) * scale, (offy + p2[1] - pcbs[0].pos_y) * scale, color=0xFFFF00)
+
     def content(self):
         with Window():
             with VBox():
                 with HBox():
                     Button("Add PCB").click(self.addPCB)
                     Spacer()
-                    Button("Save").click(self.save)
+                    RadioButton("Mousebites", "mb", self.state("cut_method"))
+                    RadioButton("V-Cut", "vc", self.state("cut_method"))
+                    Button("Save").click(self.build, True)
 
                 with Grid():
                     for i,pcb in enumerate(self.state.pcb):
@@ -171,7 +209,12 @@ class UI(Application):
                         Button("CCW").click(self.rotateCCW, pcb).grid(row=i, column=5)
                         Button("CW").click(self.rotateCW, pcb).grid(row=i, column=6)
 
-                Canvas(self.painter, self.state.pcb).layout(width=self.state.canvas_width, height=self.state.canvas_height)
+                self.state.pcb
+                self.state.cuts
+                self.state.cut_method
+                self.state.mb_diameter
+                self.state.mb_spacing
+                Canvas(self.painter).layout(width=self.state.canvas_width, height=self.state.canvas_height).style(bgColor=0x000000)
 
                 Spacer()
 
