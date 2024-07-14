@@ -137,15 +137,19 @@ class UI(Application):
         if save:
             panel.save()
 
-    def rotateCCW(self, pcb):
-        pcb.rotate += 1
-        self.autoScale()
-        self.build()
+    def rotateCCW(self):
+        pcb = self.state.focus
+        if pcb:
+            pcb.rotate += 1
+            self.autoScale()
+            self.build()
 
-    def rotateCW(self, pcb):
-        pcb.rotate -= 1
-        self.autoScale()
-        self.build()
+    def rotateCW(self):
+        pcb = self.state.focus
+        if pcb:
+            pcb.rotate -= 1
+            self.autoScale()
+            self.build()
 
     def toCanvas(self, x, y):
         scale, offx, offy = self.state.scale
@@ -234,16 +238,17 @@ class UI(Application):
             with VBox():
                 with HBox():
                     Button("Add PCB").click(self.addPCB)
+                    if self.state.focus:
+                        Button("CCW").click(self.rotateCCW)
+                        Button("CW").click(self.rotateCW)
                     Spacer()
-                    RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
-                    RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
-                    Button("Save").click(self.build, True)
+                    if self.state.pcb:
+                        RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
+                        RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                        Button("Save").click(self.build, True)
 
-                with Grid():
-                    for i,pcb in enumerate(self.state.pcb):
-                        Label(f"{i+1}. {pcb.file}").grid(row=i, column=0)
-                        Button("CCW").click(self.rotateCCW, pcb).grid(row=i, column=5)
-                        Button("CW").click(self.rotateCW, pcb).grid(row=i, column=6)
+                for i,pcb in enumerate(self.state.pcb):
+                    Label(f"{i+1}. {pcb.file}").grid(row=i, column=0)
 
                 self.state.pcb
                 self.state.cuts
