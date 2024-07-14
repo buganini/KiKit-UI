@@ -35,6 +35,45 @@ class PCB():
     def moveDown(self):
         self.y += 1 * mm
 
+    def setTop(self, top):
+        if self.rotate % 4 == 0:
+            self.y = top
+        elif self.rotate % 4 == 1:
+            self.y = top + self.width
+        elif self.rotate % 4 == 2:
+            self.y = top + self.height
+        elif self.rotate % 4 == 3:
+            self.y = top
+
+    def setBottom(self, bottom):
+        if self.rotate % 4 == 0:
+            self.y = bottom - self.height
+        elif self.rotate % 4 == 1:
+            self.y = bottom
+        elif self.rotate % 4 == 2:
+            self.y = bottom
+        elif self.rotate % 4 == 3:
+            self.y = bottom - self.width
+
+    def setLeft(self, left):
+        if self.rotate % 4 == 0:
+            self.x = left
+        elif self.rotate % 4 == 1:
+            self.x = left
+        elif self.rotate % 4 == 2:
+            self.x = left + self.width
+        elif self.rotate % 4 == 3:
+            self.x = left + self.height
+
+    def setRight(self, right):
+        if self.rotate % 4 == 0:
+            self.x = right - self.width
+        elif self.rotate % 4 == 1:
+            self.x = right - self.height
+        elif self.rotate % 4 == 2:
+            self.x = right
+        elif self.rotate % 4 == 3:
+            self.x = right
     @property
     def bbox(self):
         if self.rotate % 4 == 0:
@@ -162,16 +201,22 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: pcb.y)
+        todo.sort(key=lambda pcb: nbbox(*pcb.bbox)[1])
         for i, pcb in enumerate(todo[1:], 1):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            top = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
-                    pcb.y = by2 + self.state.y_spacing * mm
-                    break
+                    if top is None:
+                        top = by2 + self.state.y_spacing * mm
+                    else:
+                        top = max(top, by2 + self.state.y_spacing * mm)
+            if top is None:
+                x1, y1, x2, y2 = nbbox(*todo[0].bbox)
+                pcb.setTop(y1)
             else:
-                pcb.y = todo[0].y
+                pcb.setTop(top)
         self.autoScale()
         self.build()
 
@@ -179,16 +224,22 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: -(pcb.y+pcb.height))
+        todo.sort(key=lambda pcb: -nbbox(*pcb.bbox)[3])
         for i, pcb in enumerate(todo[1:], 1):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            bottom = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
-                    pcb.y = by1 - pcb.height - self.state.y_spacing * mm
-                    break
+                    if bottom is None:
+                        bottom = by1 - self.state.x_spacing * mm
+                    else:
+                        bottom = min(bottom, by1 - self.state.x_spacing * mm)
+            if bottom is None:
+                x1, y1, x2, y2 = nbbox(*todo[0].bbox)
+                pcb.setBottom(y2)
             else:
-                pcb.y = todo[0].y + todo[0].height - pcb.height
+                pcb.setBottom(bottom)
         self.autoScale()
         self.build()
 
@@ -196,16 +247,22 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: pcb.x)
+        todo.sort(key=lambda pcb: nbbox(*pcb.bbox)[0])
         for i, pcb in enumerate(todo[1:], 1):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            left = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
-                    pcb.x = bx2 + self.state.x_spacing * mm
-                    break
+                    if left is None:
+                        left = bx2 + self.state.x_spacing * mm
+                    else:
+                        left = max(left, bx2 + self.state.x_spacing * mm)
+            if left is None:
+                x1, y1, x2, y2 = nbbox(*todo[0].bbox)
+                pcb.setLeft(x1)
             else:
-                pcb.x = todo[0].x
+                pcb.setLeft(left)
         self.autoScale()
         self.build()
 
@@ -213,16 +270,22 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: -(pcb.x+pcb.width))
+        todo.sort(key=lambda pcb: -nbbox(*pcb.bbox)[2])
         for i, pcb in enumerate(todo[1:], 1):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            right = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
-                    pcb.x = bx1 - pcb.width - self.state.x_spacing * mm
-                    break
+                    if right is None:
+                        right = bx1 - self.state.x_spacing * mm
+                    else:
+                        right = min(right, bx1 - self.state.x_spacing * mm)
+            if right is None:
+                x1, y1, x2, y2 = nbbox(*todo[0].bbox)
+                pcb.setRight(x2)
             else:
-                pcb.x = todo[0].x + todo[0].width - pcb.width
+                pcb.setRight(right)
         self.autoScale()
         self.build()
 
