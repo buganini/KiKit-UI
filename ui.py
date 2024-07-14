@@ -133,26 +133,32 @@ class UI(Application):
 
     def moveUp(self, pcb):
         pcb.moveUp()
+        self.autoScale()
         self.build()
 
     def moveLeft(self, pcb):
         pcb.moveLeft()
+        self.autoScale()
         self.build()
 
     def moveRight(self, pcb):
         pcb.moveRight()
+        self.autoScale()
         self.build()
 
     def moveDown(self, pcb):
         pcb.moveDown()
+        self.autoScale()
         self.build()
 
     def rotateCCW(self, pcb):
         pcb.rotate += 1
+        self.autoScale()
         self.build()
 
     def rotateCW(self, pcb):
         pcb.rotate -= 1
+        self.autoScale()
         self.build()
 
     def drawPCB(self, canvas, pcb, highlight):
@@ -197,8 +203,8 @@ class UI(Application):
                 with HBox():
                     Button("Add PCB").click(self.addPCB)
                     Spacer()
-                    RadioButton("Mousebites", "mb", self.state("cut_method"))
-                    RadioButton("V-Cut", "vc", self.state("cut_method"))
+                    RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
+                    RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
                     Button("Save").click(self.build, True)
 
                 with Grid():
