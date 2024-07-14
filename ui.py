@@ -232,9 +232,9 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     if bottom is None:
-                        bottom = by1 - self.state.x_spacing * mm
+                        bottom = by1 - self.state.y_spacing * mm
                     else:
-                        bottom = min(bottom, by1 - self.state.x_spacing * mm)
+                        bottom = min(bottom, by1 - self.state.y_spacing * mm)
             if bottom is None:
                 x1, y1, x2, y2 = nbbox(*todo[0].bbox)
                 pcb.setBottom(y2)
@@ -474,12 +474,12 @@ class UI(Application):
                                 r = 0
 
                                 Button("Snap Top").grid(row=r, column=0).click(self.snap_top)
-                                TextField(self.state("x_spacing")).layout(width=100).grid(row=r, column=1)
+                                TextField(self.state("y_spacing")).layout(width=100).grid(row=r, column=1)
                                 Button("Snap Bottom").grid(row=r, column=2).click(self.snap_bottom)
                                 r += 1
 
                                 Button("Snap Left").grid(row=r, column=0).click(self.snap_left)
-                                TextField(self.state("y_spacing")).layout(width=100).grid(row=r, column=1)
+                                TextField(self.state("x_spacing")).layout(width=100).grid(row=r, column=1)
                                 Button("Snap Right").grid(row=r, column=2).click(self.snap_right)
 
 
