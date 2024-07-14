@@ -97,9 +97,11 @@ class UI(Application):
             return
 
         if save:
-            self.state.output = SaveFile(self.state.output, "KiCad PCB (*.kicad_pcb)")
-            if not self.state.output.endswith(".kicad_pcb"):
-                self.state.output += ".kicad_pcb"
+            output = SaveFile(self.state.output, "KiCad PCB (*.kicad_pcb)")
+            if output:
+                if not output.endswith(".kicad_pcb"):
+                    output += ".kicad_pcb"
+                self.state.output = output
 
         panel = panelize.Panel(self.state.output)
         for pcb in pcbs:
