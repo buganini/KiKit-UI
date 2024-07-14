@@ -368,12 +368,22 @@ class UI(Application):
                 self.state()
         self.mousepos = e.x, e.y
 
-    def drawPCB(self, canvas, pcb, highlight):
+    def drawPCB(self, canvas, index, pcb, highlight):
         stroke = 0x00FFFF if highlight else 0x777777
         x1, y1, x2, y2 = pcb.bbox
         x1, y1 = self.toCanvas(x1, y1)
         x2, y2 = self.toCanvas(x2, y2)
         canvas.drawRect(x1, y1, x2, y2, stroke=stroke)
+
+        if pcb.rotate % 4 == 0:
+            tx1, ty1 = x1+10, y1+10
+        elif pcb.rotate % 4 == 1:
+            tx1, ty1 = x1+10, y1-10
+        elif pcb.rotate % 4 == 2:
+            tx1, ty1 = x1-10, y1-10
+        elif pcb.rotate % 4 == 3:
+            tx1, ty1 = x1-10, y1+10
+        canvas.drawText(tx1, ty1, f"{index+1}", rotate=pcb.rotate*-90)
 
     def painter(self, canvas):
         scale, offx, offy = self.state.scale
@@ -404,15 +414,15 @@ class UI(Application):
             else:
                 print("Unhandled board substrate exterior", exterior)
 
-        for pcb in pcbs:
+        for i,pcb in enumerate(pcbs):
             if pcb is self.state.focus:
                 continue
-            self.drawPCB(canvas, pcb, False)
+            self.drawPCB(canvas, i, pcb, False)
 
-        for pcb in pcbs:
+        for i,pcb in enumerate(pcbs):
             if pcb is not self.state.focus:
                 continue
-            self.drawPCB(canvas, pcb, True)
+            self.drawPCB(canvas, i, pcb, True)
 
         if not self.mousehold or not self.mousemoved:
             cut_method = self.state.cut_method
