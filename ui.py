@@ -73,10 +73,7 @@ class UI(Application):
 
         inputs = sys.argv[1:]
         for boardfile in inputs:
-            pcb = PCB(boardfile)
-            if len(self.state.pcb) > 0:
-                pcb.x = self.state.pcb[0].x + self.state.pcb[0].width + 1 * mm
-            self.state.pcb.append(pcb)
+            self._addPCB(boardfile)
 
         self.autoScale()
         self.build()
@@ -93,13 +90,17 @@ class UI(Application):
 
         sw = self.state.canvas_width / mw
         sh = self.state.canvas_height / mh
-        self.state.scale = (min(sw, sh) / 2, mw/2, mh/2)
+        self.state.scale = (min(sw, sh) / 8, mw/2, mh/2)
 
     def addPCB(self):
         boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
+        self._addPCB(boardfile)
+
+    def _addPCB(self, boardfile):
         pcb = PCB(boardfile)
         if len(self.state.pcb) > 0:
-            pcb.x = self.state.pcb[0].x + 10 * mm
+            last = self.state.pcb[-1]
+            pcb.y = last.y + last.height + self.state.y_spacing * mm
         self.state.pcb.append(pcb)
         self.autoScale()
         self.build()
@@ -150,81 +151,69 @@ class UI(Application):
 
     def snap_top(self):
         todo = list(self.state.pcb)
-        todo.sort(key=lambda pcb: (pcb.y, pcb.x))
-        most = min(todo, key=lambda pcb: pcb.y)
-        todo = [pcb for pcb in todo if pcb is not most]
-        done = [most]
-        for pcb in todo:
+        if not todo:
+            return
+        todo.sort(key=lambda pcb: pcb.y)
+        for i, pcb in enumerate(todo[1:], 1):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
-            for d in done:
+            for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     pcb.y = by2 + self.state.y_spacing * mm
-                    done.append(pcb)
                     break
             else:
-                pcb.y = most.y
-                done.append(pcb)
+                pcb.y = todo[0].y
         self.autoScale()
         self.build()
 
     def snap_bottom(self):
         todo = list(self.state.pcb)
-        todo.sort(key=lambda pcb: (pcb.y, pcb.x))
-        most = max(todo, key=lambda pcb: pcb.y+pcb.height)
-        todo = [pcb for pcb in todo if pcb is not most]
-        done = [most]
-        for pcb in todo:
+        if not todo:
+            return
+        todo.sort(key=lambda pcb: -(pcb.y+pcb.height))
+        for i, pcb in enumerate(todo[1:], 1):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
-            for d in done:
+            for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     pcb.y = by1 - pcb.height - self.state.y_spacing * mm
-                    done.append(pcb)
                     break
             else:
-                pcb.y = most.y + most.height - pcb.height
-                done.append(pcb)
+                pcb.y = todo[0].y + todo[0].height - pcb.height
         self.autoScale()
         self.build()
 
     def snap_left(self):
         todo = list(self.state.pcb)
-        todo.sort(key=lambda pcb: (pcb.y, pcb.x))
-        most = min(todo, key=lambda pcb: pcb.x)
-        todo = [pcb for pcb in todo if pcb is not most]
-        done = [most]
-        for pcb in todo:
+        if not todo:
+            return
+        todo.sort(key=lambda pcb: pcb.x)
+        for i, pcb in enumerate(todo[1:], 1):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
-            for d in done:
+            for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
                     pcb.x = bx2 + self.state.x_spacing * mm
-                    done.append(pcb)
                     break
             else:
-                pcb.x = most.x
-                done.append(pcb)
+                pcb.x = todo[0].x
         self.autoScale()
         self.build()
 
     def snap_right(self):
         todo = list(self.state.pcb)
-        todo.sort(key=lambda pcb: (pcb.y, pcb.x))
-        most = max(todo, key=lambda pcb: pcb.x+pcb.width)
-        todo = [pcb for pcb in todo if pcb is not most]
-        done = [most]
-        for pcb in todo:
+        if not todo:
+            return
+        todo.sort(key=lambda pcb: -(pcb.x+pcb.width))
+        for i, pcb in enumerate(todo[1:], 1):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
-            for d in done:
+            for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
                     pcb.x = bx1 - pcb.width - self.state.x_spacing * mm
-                    done.append(pcb)
                     break
             else:
-                pcb.x = most.x + most.width - pcb.width
-                done.append(pcb)
+                pcb.x = todo[0].x + todo[0].width - pcb.width
         self.autoScale()
         self.build()
 
