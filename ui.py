@@ -60,6 +60,8 @@ class UI(Application):
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
 
+        self.mousepos = None
+        self.mouse_dragging = None
         self.mousehold = False
 
         inputs = sys.argv[1:]
@@ -164,11 +166,28 @@ class UI(Application):
     def mousedown(self, e):
         self.mousepos = e.x, e.y
         self.mousehold = True
-        self.mousemoved = False
+        self.mousemoved = 0
+
+        pcbs = self.state.pcb
+        x, y = self.fromCanvas(e.x, e.y)
+        p = Point(x, y)
+
+        self.mouse_dragging = None
+        if self.state.focus:
+            x1, y1, x2, y2 = self.state.focus.bbox
+            if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+                self.mouse_dragging = self.state.focus
+        if self.mouse_dragging is None:
+            for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
+                x1, y1, x2, y2 = pcb.bbox
+                if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+                    self.mouse_dragging = pcb
+                    break
 
     def mouseup(self, e):
         self.mousehold = False
-        if not self.mousemoved:
+        if self.mousemoved < 5:
+            self.state.focus = None
             pcbs = self.state.pcb
             x, y = self.fromCanvas(e.x, e.y)
             p = Point(x, y)
@@ -182,15 +201,20 @@ class UI(Application):
         self.build()
 
     def mousemove(self, e):
-        self.mousemoved = True
         if self.mousehold:
+            dx = e.x - self.mousepos[0]
+            dy = e.y - self.mousepos[1]
+            self.mousemoved += (dx**2 + dy**2)**0.5
+
             x1, y1 = self.fromCanvas(*self.mousepos)
             x2, y2 = self.fromCanvas(e.x, e.y)
             dx = x2 - x1
             dy = y2 - y1
-            if self.state.focus:
-                self.state.focus.x += int(dx)
-                self.state.focus.y += int(dy)
+            self.state.focus = self.mouse_dragging
+
+            if self.mouse_dragging:
+                self.mouse_dragging.x += int(dx)
+                self.mouse_dragging.y += int(dy)
                 self.state()
         self.mousepos = e.x, e.y
 
