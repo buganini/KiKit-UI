@@ -86,7 +86,7 @@ class UI(Application):
         self.state.scale = (min(sw, sh) / 2, mw/2, mh/2)
 
     def addPCB(self):
-        boardfile = OpenFileDialog("Open PCB", "KiCad PCB (*.kicad_pcb)")
+        boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
         pcb = PCB(boardfile)
         if len(self.state.pcb) > 0:
             pcb.x = self.state.pcb[0].x + 10 * mm
