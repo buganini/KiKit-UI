@@ -94,7 +94,8 @@ class UI(Application):
 
     def addPCB(self):
         boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
-        self._addPCB(boardfile)
+        if boardfile:
+            self._addPCB(boardfile)
 
     def _addPCB(self, boardfile):
         pcb = PCB(boardfile)
@@ -102,6 +103,14 @@ class UI(Application):
             last = self.state.pcb[-1]
             pcb.y = last.y + last.height + self.state.y_spacing * mm
         self.state.pcb.append(pcb)
+        self.autoScale()
+        self.build()
+
+    def duplicate(self, pcb):
+        self._addPCB(pcb.file)
+
+    def remove(self, i):
+        self.state.pcb.pop(i)
         self.autoScale()
         self.build()
 
@@ -363,8 +372,13 @@ class UI(Application):
     def content(self):
         with Window(size=(1300, 768)):
             with VBox():
-                for i,pcb in enumerate(self.state.pcb):
-                    Label(f"{i+1}. {pcb.file}").grid(row=i, column=0)
+                with HBox():
+                    with Grid():
+                        for i,pcb in enumerate(self.state.pcb):
+                            Label(f"{i+1}. {pcb.file}").grid(row=i, column=0)
+                            Button("Duplicate").grid(row=i, column=1).click(self.duplicate, pcb)
+                            Button("Remove").grid(row=i, column=2).click(self.remove, i)
+                    Spacer()
 
                 with HBox():
                     self.state.pcb
