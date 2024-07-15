@@ -397,9 +397,13 @@ class UI(Application):
         self.state.scale = offx, offy, nscale
 
     def keypress(self, event):
-        if event.text == "r" and self.state.focus:
-            self.state.focus.rotate += 1
-            self.build()
+        if self.state.focus:
+            if event.text == "r":
+                self.state.focus.rotate += 1
+                self.build()
+            elif event.text == "R":
+                self.state.focus.rotate -= 1
+                self.build()
 
     def drawPCB(self, canvas, index, pcb, highlight):
         stroke = 0x00FFFF if highlight else 0x777777
@@ -548,8 +552,8 @@ class UI(Application):
 
                             if self.state.focus:
                                 with HBox():
-                                    Button("CCW").click(self.rotateCCW)
-                                    Button("CW").click(self.rotateCW)
+                                    Button("CCW (r)").click(self.rotateCCW)
+                                    Button("CW (R)").click(self.rotateCW)
 
                             Spacer()
 
