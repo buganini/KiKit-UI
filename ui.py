@@ -4,6 +4,7 @@ from kikit.units import mm
 from shapely import Point, Polygon, MultiPolygon, LineString
 import pcbnew
 
+import os
 import sys
 sys.path.append("/Users/buganini/repo/buganini/PUI")
 from PUI.PySide6 import *
@@ -16,6 +17,7 @@ class PCB():
         self.file = boardfile
         board = pcbnew.LoadBoard(boardfile)
         bbox = panelize.findBoardBoundingBox(board)
+        self.ident = os.path.join(os.path.basename(os.path.dirname(boardfile)), os.path.basename(boardfile))
         self.pos_x, self.pos_y = bbox.GetPosition()
         self.width = bbox.GetWidth()
         self.height = bbox.GetHeight()
@@ -408,7 +410,7 @@ class UI(Application):
             tx1, ty1 = x1-10, y1-10
         elif pcb.rotate % 4 == 3:
             tx1, ty1 = x1-10, y1+10
-        canvas.drawText(tx1, ty1, f"{index+1}", rotate=pcb.rotate*-90)
+        canvas.drawText(tx1, ty1, f"{index+1}.{pcb.ident}", rotate=pcb.rotate*-90)
 
     def painter(self, canvas):
         offx, offy, scale = self.state.scale
@@ -472,26 +474,27 @@ class UI(Application):
         with Window(size=(1300, 768)):
             with VBox():
                 with HBox():
-                    with Grid():
-                        for i,pcb in enumerate(self.state.pcb):
-                            Label(f"{i+1}. {pcb.file}").grid(row=i, column=0)
-                            Button("Duplicate").grid(row=i, column=1).click(self.duplicate, pcb)
-                            Button("Remove").grid(row=i, column=2).click(self.remove, i)
-                    Spacer()
+                    with VBox():
+                        with HBox():
+                            with Grid():
+                                for i,pcb in enumerate(self.state.pcb):
+                                    Label(f"{i+1}. {pcb.ident}").grid(row=i, column=0)
+                                    Button("Duplicate").grid(row=i, column=1).click(self.duplicate, pcb)
+                                    Button("Remove").grid(row=i, column=2).click(self.remove, i)
+                            Spacer()
 
-                with HBox():
-                    self.state.pcb
-                    self.state.cuts
-                    self.state.cut_method
-                    self.state.mb_diameter
-                    self.state.mb_spacing
-                    (Canvas(self.painter)
-                        .mousedown(self.mousedown)
-                        .mouseup(self.mouseup)
-                        .mousemove(self.mousemove)
-                        .wheel(self.wheel)
-                        .layout(width=self.state.canvas_width, height=self.state.canvas_height)
-                        .style(bgColor=0x000000))
+                        self.state.pcb
+                        self.state.cuts
+                        self.state.cut_method
+                        self.state.mb_diameter
+                        self.state.mb_spacing
+                        (Canvas(self.painter)
+                            .mousedown(self.mousedown)
+                            .mouseup(self.mouseup)
+                            .mousemove(self.mousemove)
+                            .wheel(self.wheel)
+                            .layout(width=self.state.canvas_width, height=self.state.canvas_height)
+                            .style(bgColor=0x000000))
 
                     with VBox():
                         Button("Add PCB").click(self.addPCB)
