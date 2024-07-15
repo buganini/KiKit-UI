@@ -107,6 +107,7 @@ class UI(Application):
         self.state.frame_right = 0
         self.state.x_spacing = 5
         self.state.y_spacing = 5
+        self.state.mill_fillets = 1
 
         self.mousepos = None
         self.mouse_dragging = None
@@ -232,6 +233,7 @@ class UI(Application):
 
         panel.buildPartitionLineFromBB()
         cuts = panel.buildFullTabs(cutoutDepth=3*mm)
+        panel.addMillFillets(self.state.mill_fillets*mm)
         if not save:
             self.state.cuts = cuts
             self.state.boardSubstrate = panel.boardSubstrate
@@ -649,6 +651,8 @@ class UI(Application):
                                 RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
                                 RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
                                 Spacer()
+                                Label("Mill Fillets")
+                                TextField(self.state("mill_fillets")).change(self.build)
 
                             if self.state.use_frame:
                                 with HBox():
