@@ -396,6 +396,11 @@ class UI(Application):
         offy = e.y - (e.y - offy)*nscale/scale
         self.state.scale = offx, offy, nscale
 
+    def keypress(self, event):
+        if event.text == "r" and self.state.focus:
+            self.state.focus.rotate += 1
+            self.build()
+
     def drawPCB(self, canvas, index, pcb, highlight):
         stroke = 0x00FFFF if highlight else 0x777777
         x1, y1, x2, y2 = pcb.bbox
@@ -411,7 +416,7 @@ class UI(Application):
             tx1, ty1 = x1-10, y1-10
         elif pcb.rotate % 4 == 3:
             tx1, ty1 = x1-10, y1+10
-        canvas.drawText(tx1, ty1, f"{index+1}.{pcb.ident}", rotate=pcb.rotate*-90)
+        canvas.drawText(tx1, ty1, f"{index+1}", rotate=pcb.rotate*-90)
 
     def painter(self, canvas):
         offx, offy, scale = self.state.scale
@@ -472,7 +477,7 @@ class UI(Application):
                     canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
 
     def content(self):
-        with Window(size=(1300, 768)):
+        with Window(size=(1300, 768)).keypress(self.keypress):
             with VBox():
                 with HBox():
                     with VBox():
