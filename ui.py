@@ -277,7 +277,8 @@ class UI(Application):
             panel.appendSubstrate(frameBody)
 
         panel.buildPartitionLineFromBB(boundarySubstrates=boundarySubstrates)
-        cuts = panel.buildFullTabs(cutoutDepth=3*mm)
+        # cuts = panel.buildFullTabs(cutoutDepth=3*mm)
+        cuts = []
         panel.addMillFillets(self.state.mill_fillets*mm)
         if not save:
             self.state.cuts = cuts
