@@ -103,6 +103,10 @@ class UI(Application):
         self.state.mb_spacing = 0.75 * mm
         self.state.frame_width = 100
         self.state.frame_height = 100
+        self.state.margin_top = 5
+        self.state.margin_bottom = 5
+        self.state.margin_left = 0
+        self.state.margin_right = 0
         self.state.x_spacing = 5
         self.state.y_spacing = 5
 
@@ -153,6 +157,8 @@ class UI(Application):
         if len(self.state.pcb) > 0:
             last = self.state.pcb[-1]
             pcb.y = last.y + last.height + self.state.y_spacing * mm
+        else:
+            pcb.y = self.state.margin_top * mm
         self.state.pcb.append(pcb)
         self.autoScale()
         self.build()
@@ -216,7 +222,7 @@ class UI(Application):
         if not todo:
             return
         todo.sort(key=lambda pcb: nbbox(*pcb.bbox)[1])
-        for i, pcb in enumerate(todo[1:], 1):
+        for i, pcb in enumerate(todo):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
             top = None
             for d in todo[:i][::-1]:
@@ -227,8 +233,7 @@ class UI(Application):
                     else:
                         top = max(top, by2 + self.state.y_spacing * mm)
             if top is None:
-                x1, y1, x2, y2 = nbbox(*todo[0].bbox)
-                pcb.setTop(y1)
+                pcb.setTop(self.state.margin_top * mm)
             else:
                 pcb.setTop(top)
         self.autoScale()
@@ -239,7 +244,7 @@ class UI(Application):
         if not todo:
             return
         todo.sort(key=lambda pcb: -nbbox(*pcb.bbox)[3])
-        for i, pcb in enumerate(todo[1:], 1):
+        for i, pcb in enumerate(todo):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
             bottom = None
             for d in todo[:i][::-1]:
@@ -250,8 +255,7 @@ class UI(Application):
                     else:
                         bottom = min(bottom, by1 - self.state.y_spacing * mm)
             if bottom is None:
-                x1, y1, x2, y2 = nbbox(*todo[0].bbox)
-                pcb.setBottom(y2)
+                pcb.setBottom((self.state.frame_height - self.state.margin_bottom) * mm)
             else:
                 pcb.setBottom(bottom)
         self.autoScale()
@@ -262,7 +266,7 @@ class UI(Application):
         if not todo:
             return
         todo.sort(key=lambda pcb: nbbox(*pcb.bbox)[0])
-        for i, pcb in enumerate(todo[1:], 1):
+        for i, pcb in enumerate(todo):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
             left = None
             for d in todo[:i][::-1]:
@@ -273,8 +277,7 @@ class UI(Application):
                     else:
                         left = max(left, bx2 + self.state.x_spacing * mm)
             if left is None:
-                x1, y1, x2, y2 = nbbox(*todo[0].bbox)
-                pcb.setLeft(x1)
+                pcb.setLeft(self.state.margin_left * mm)
             else:
                 pcb.setLeft(left)
         self.autoScale()
@@ -285,7 +288,7 @@ class UI(Application):
         if not todo:
             return
         todo.sort(key=lambda pcb: -nbbox(*pcb.bbox)[2])
-        for i, pcb in enumerate(todo[1:], 1):
+        for i, pcb in enumerate(todo):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
             right = None
             for d in todo[:i][::-1]:
@@ -296,8 +299,7 @@ class UI(Application):
                     else:
                         right = min(right, bx1 - self.state.x_spacing * mm)
             if right is None:
-                x1, y1, x2, y2 = nbbox(*todo[0].bbox)
-                pcb.setRight(x2)
+                pcb.setRight((self.state.frame_width - self.state.margin_right) * mm)
             else:
                 pcb.setRight(right)
         self.autoScale()
@@ -489,12 +491,24 @@ class UI(Application):
                             with HBox():
                                 RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
                                 RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                                Spacer()
+                                Label("Unit: mm")
 
                             with HBox():
                                 Label("Frame")
                                 TextField(self.state("frame_width"))
                                 TextField(self.state("frame_height"))
-                                Label("(mm)")
+
+                            with HBox():
+                                Label("Margin")
+                                Label("Top")
+                                TextField(self.state("margin_top"))
+                                Label("Bottom")
+                                TextField(self.state("margin_bottom"))
+                                Label("Left")
+                                TextField(self.state("margin_left"))
+                                Label("Right")
+                                TextField(self.state("margin_right"))
 
                             with Grid():
                                 r = 0
