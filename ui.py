@@ -91,7 +91,7 @@ class UI(Application):
         super().__init__()
         self.state = State()
         self.state.pcb = []
-        self.state.scale = (1, 0, 0)
+        self.state.scale = (0, 0, 1)
         self.state.output = ""
         self.state.canvas_width = 800
         self.state.canvas_height = 800
@@ -118,18 +118,30 @@ class UI(Application):
         self.build()
 
     def autoScale(self):
-        mw = 0
-        mh = 0
+        x1, y1 = 0, 0
+        x2, y2 = self.state.frame_width * mm, self.state.frame_height * mm
         for pcb in self.state.pcb:
-            mw = max(mw, pcb.width)
-            mh = max(mh, pcb.height)
+            bbox = nbbox(*pcb.bbox)
+            x1 = min(x1, bbox[0])
+            y1 = min(y1, bbox[1])
+            x2 = max(x2, bbox[2])
+            y2 = max(y2, bbox[3])
 
-        if mw == 0 or mh == 0:
+        dw = x2-x1
+        dh = y2-y1
+
+        if dw == 0 or dh == 0:
             return
 
-        sw = self.state.canvas_width / mw
-        sh = self.state.canvas_height / mh
-        self.state.scale = (min(sw, sh) / 2, mw/2, mh/2)
+        cw = self.state.canvas_width
+        ch = self.state.canvas_height
+        sw = cw / dw
+        sh = ch / dh
+        scale = min(sw, sh) * 0.75
+        self.scale = scale
+        offx = (cw - (dw+x1) * scale) / 2
+        offy = (ch - (dh+y1) * scale) / 2
+        self.state.scale = (offx, offy, scale)
 
     def addPCB(self):
         boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
@@ -295,23 +307,21 @@ class UI(Application):
         pcb = self.state.focus
         if pcb:
             pcb.rotate += 1
-            self.autoScale()
             self.build()
 
     def rotateCW(self):
         pcb = self.state.focus
         if pcb:
             pcb.rotate -= 1
-            self.autoScale()
             self.build()
 
     def toCanvas(self, x, y):
-        scale, offx, offy = self.state.scale
-        return (offx + x) * scale, (offy + y) * scale
+        offx, offy, scale = self.state.scale
+        return x * scale + offx, y * scale + offy
 
     def fromCanvas(self, x, y):
-        scale, offx, offy = self.state.scale
-        return x/scale - offx, y/scale - offy
+        offx, offy, scale = self.state.scale
+        return (x - offx)/scale, (y - offy)/scale
 
     def mousedown(self, e):
         self.mousepos = e.x, e.y
@@ -352,9 +362,9 @@ class UI(Application):
 
     def mousemove(self, e):
         if self.mousehold:
-            dx = e.x - self.mousepos[0]
-            dy = e.y - self.mousepos[1]
-            self.mousemoved += (dx**2 + dy**2)**0.5
+            pdx = e.x - self.mousepos[0]
+            pdy = e.y - self.mousepos[1]
+            self.mousemoved += (pdx**2 + pdy**2)**0.5
 
             x1, y1 = self.fromCanvas(*self.mousepos)
             x2, y2 = self.fromCanvas(e.x, e.y)
@@ -366,6 +376,11 @@ class UI(Application):
                 self.mouse_dragging.x += int(dx)
                 self.mouse_dragging.y += int(dy)
                 self.state()
+            else:
+                offx, offy, scale = self.state.scale
+                offx += pdx
+                offy += pdy
+                self.state.scale = offx, offy, scale
         self.mousepos = e.x, e.y
 
     def drawPCB(self, canvas, index, pcb, highlight):
@@ -386,13 +401,12 @@ class UI(Application):
         canvas.drawText(tx1, ty1, f"{index+1}", rotate=pcb.rotate*-90)
 
     def painter(self, canvas):
-        scale, offx, offy = self.state.scale
+        offx, offy, scale = self.state.scale
         pcbs = self.state.pcb
         cuts = self.state.cuts
         boardSubstrate = self.state.boardSubstrate
 
-        x1 = 0
-        y1 = 0
+        x1, y1 = self.toCanvas(0, 0)
         x2, y2 = self.toCanvas(self.state.frame_width * mm, self.state.frame_height * mm)
         canvas.drawRect(x1, y1, x2, y2, stroke=0x333333)
 
@@ -424,7 +438,7 @@ class UI(Application):
                 continue
             self.drawPCB(canvas, i, pcb, True)
 
-        if not self.mousehold or not self.mousemoved:
+        if not self.mousehold or not self.mousemoved or not self.mouse_dragging:
             cut_method = self.state.cut_method
             mb_diameter = self.state.mb_diameter
             mb_spacing = self.state.mb_spacing
