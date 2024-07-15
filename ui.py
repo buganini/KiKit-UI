@@ -358,17 +358,20 @@ class UI(Application):
     def mouseup(self, e):
         self.mousehold = False
         if self.mousemoved < 5:
-            self.state.focus = None
+            found = False
             pcbs = self.state.pcb
             x, y = self.fromCanvas(e.x, e.y)
             p = Point(x, y)
             for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
                 x1, y1, x2, y2 = pcb.bbox
                 if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+                    found = True
                     if self.state.focus is pcb:
                         continue
                     else:
                         self.state.focus = pcb
+            if not found:
+                self.state.focus = None
         self.build()
 
     def mousemove(self, e):
