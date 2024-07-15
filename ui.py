@@ -339,12 +339,12 @@ class UI(Application):
             x1, y1, x2, y2 = self.state.focus.bbox
             if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
                 self.mouse_dragging = self.state.focus
-        if self.mouse_dragging is None:
-            for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
-                x1, y1, x2, y2 = pcb.bbox
-                if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
-                    self.mouse_dragging = pcb
-                    break
+        # if self.mouse_dragging is None:
+        #     for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
+        #         x1, y1, x2, y2 = pcb.bbox
+        #         if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+        #             self.mouse_dragging = pcb
+        #             break
 
     def mouseup(self, e):
         self.mousehold = False
