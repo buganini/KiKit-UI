@@ -627,8 +627,8 @@ class UI(Application):
 
                                 with HBox():
                                     Label("Rotate")
-                                    Button("CCW (r)").click(self.rotateCCW)
-                                    Button("CW (R)").click(self.rotateCW)
+                                    Button("↺ (r)").click(self.rotateCCW)
+                                    Button("↻ (R)").click(self.rotateCW)
                                     Spacer()
 
                                 with HBox():
