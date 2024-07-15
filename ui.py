@@ -1,5 +1,5 @@
 #!/usr/bin/env /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
-from kikit import panelize
+from kikit import panelize, substrate
 from kikit.units import mm
 from shapely import Point, Polygon, MultiPolygon, LineString
 import pcbnew
@@ -190,35 +190,52 @@ class UI(Application):
 
         panel = panelize.Panel(self.state.output)
 
+        boundarySubstrates = []
         if self.state.use_frame:
             if self.state.frame_top > 0:
-                panel.appendSubstrate(Polygon([
+                polygon = Polygon([
                     [pos_x, pos_y],
                     [pos_x+self.state.frame_width*mm, pos_y],
                     [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_top*mm],
                     [pos_x, pos_y+self.state.frame_top*mm],
-                ]))
+                ])
+                panel.appendSubstrate(polygon)
+                sub = substrate.Substrate([])
+                sub.union(polygon)
+                boundarySubstrates.append(sub)
             if self.state.frame_bottom > 0:
-                panel.appendSubstrate(Polygon([
+                polygon = Polygon([
                     [pos_x, pos_y+self.state.frame_height*mm],
                     [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm],
                     [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm-self.state.frame_bottom*mm],
                     [pos_x, pos_y+self.state.frame_height*mm-self.state.frame_bottom*mm],
-                ]))
+                ])
+                panel.appendSubstrate(polygon)
+                sub = substrate.Substrate([])
+                sub.union(polygon)
+                boundarySubstrates.append(sub)
             if self.state.frame_left > 0:
-                panel.appendSubstrate(Polygon([
+                polygon = Polygon([
                     [pos_x, pos_y],
                     [pos_x, pos_y+self.state.frame_height*mm],
                     [pos_x+self.state.frame_left*mm, pos_y+self.state.frame_height*mm],
                     [pos_x+self.state.frame_left*mm, pos_y],
-                ]))
+                ])
+                panel.appendSubstrate(polygon)
+                sub = substrate.Substrate([])
+                sub.union(polygon)
+                boundarySubstrates.append(sub)
             if self.state.frame_right > 0:
-                panel.appendSubstrate(Polygon([
+                polygon = Polygon([
                     [pos_x+self.state.frame_width*mm, pos_y],
                     [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm],
                     [pos_x+self.state.frame_width*mm-self.state.frame_right*mm, pos_y+self.state.frame_height*mm],
                     [pos_x+self.state.frame_width*mm-self.state.frame_right*mm, pos_y],
-                ]))
+                ])
+                panel.appendSubstrate(polygon)
+                sub = substrate.Substrate([])
+                sub.union(polygon)
+                boundarySubstrates.append(sub)
 
         for pcb in pcbs:
             x1, y1, x2, y2 = pcb.bbox
@@ -231,7 +248,7 @@ class UI(Application):
                 inheritDrc=False
             )
 
-        panel.buildPartitionLineFromBB()
+        panel.buildPartitionLineFromBB(boundarySubstrates=boundarySubstrates)
         cuts = panel.buildFullTabs(cutoutDepth=3*mm)
         panel.addMillFillets(self.state.mill_fillets*mm)
         if not save:
