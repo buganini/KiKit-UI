@@ -563,18 +563,20 @@ class UI(Application):
 
         boardSubstrate = self.state.boardSubstrate
         if boardSubstrate:
-            exterior = boardSubstrate.exterior()
-            if isinstance(exterior, MultiPolygon):
-                for polygon in exterior.geoms:
-                    coords = polygon.exterior.coords
-                    for i in range(1, len(coords)):
-                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
-            elif isinstance(exterior, Polygon):
-                coords = exterior.exterior.coords
+            if isinstance(boardSubstrate.substrates, MultiPolygon):
+                geoms = boardSubstrate.substrates.geoms
+            elif isinstance(boardSubstrate.substrates, Polygon):
+                geoms = [boardSubstrate.substrates]
+            else:
+                geoms = []
+            for polygon in geoms:
+                coords = polygon.exterior.coords
                 for i in range(1, len(coords)):
                     self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
-            else:
-                print("Unhandled board substrate exterior", exterior)
+                for interior in polygon.interiors:
+                    coords = interior.coords
+                    for i in range(1, len(coords)):
+                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
 
         for i,pcb in enumerate(pcbs):
             if pcb is self.state.focus:
