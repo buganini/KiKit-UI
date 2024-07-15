@@ -385,6 +385,14 @@ class UI(Application):
                 self.state.scale = offx, offy, scale
         self.mousepos = e.x, e.y
 
+    def wheel(self, e):
+        offx, offy, scale = self.state.scale
+        nscale = scale + e.v_delta / 120 * scale
+        nscale = min(self.scale*2, max(self.scale/8, nscale))
+        offx = e.x - (e.x - offx)*nscale/scale
+        offy = e.y - (e.y - offy)*nscale/scale
+        self.state.scale = offx, offy, nscale
+
     def drawPCB(self, canvas, index, pcb, highlight):
         stroke = 0x00FFFF if highlight else 0x777777
         x1, y1, x2, y2 = pcb.bbox
@@ -481,6 +489,7 @@ class UI(Application):
                         .mousedown(self.mousedown)
                         .mouseup(self.mouseup)
                         .mousemove(self.mousemove)
+                        .wheel(self.wheel)
                         .layout(width=self.state.canvas_width, height=self.state.canvas_height)
                         .style(bgColor=0x000000))
 
