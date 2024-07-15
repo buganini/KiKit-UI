@@ -24,18 +24,6 @@ class PCB():
         self.y = 0
         self.rotate = 0
 
-    def moveUp(self):
-        self.y -= 1 * mm
-
-    def moveLeft(self):
-        self.x -= 1 * mm
-
-    def moveRight(self):
-        self.x += 1 * mm
-
-    def moveDown(self):
-        self.y += 1 * mm
-
     def setTop(self, top):
         if self.rotate % 4 == 0:
             self.y = top
