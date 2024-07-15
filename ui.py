@@ -194,6 +194,15 @@ class UI(Application):
             pos_y = pcbs[0].pos_y
 
         panel = panelize.Panel(self.state.output)
+
+        if self.state.use_frame:
+            panel.appendSubstrate(Polygon([
+                [pos_x, pos_y],
+                [pos_x+0, pos_y+self.state.frame_width*mm],
+                [pos_x+self.state.frame_height*mm, pos_y+self.state.frame_width*mm],
+                [pos_x+self.state.frame_height*mm, pos_y],
+            ]))
+
         for pcb in pcbs:
             x1, y1, x2, y2 = pcb.bbox
             panel.appendBoard(
