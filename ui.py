@@ -96,6 +96,7 @@ class UI(Application):
         self.state.cuts = []
         self.state.substrates = []
         self.state.use_frame = True
+        self.state.tight = True
         self.state.cut_method = "mb"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
@@ -191,7 +192,7 @@ class UI(Application):
         panel = panelize.Panel(self.state.output)
 
         boundarySubstrates = []
-        if self.state.use_frame:
+        if self.state.use_frame and not self.state.tight:
             if self.state.frame_top > 0:
                 polygon = Polygon([
                     [pos_x, pos_y],
@@ -246,6 +247,21 @@ class UI(Application):
                 tolerance=panelize.fromMm(1),
                 rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate * 90, pcbnew.DEGREES_T),
                 inheritDrc=False
+            )
+
+        if self.state.tight:
+            minWidth = 0
+            minHeight = 0
+            if self.state.use_frame:
+                minWidth = self.state.frame_width*mm
+                minHeight = self.state.frame_height*mm
+            panel.makeTightFrame(
+                width=0*mm,
+                slotwidth=3*mm,
+                hspace=3*mm,
+                vspace=3*mm,
+                minWidth=minWidth,
+                minHeight=minHeight,
             )
 
         panel.buildPartitionLineFromBB(boundarySubstrates=boundarySubstrates)
@@ -498,7 +514,7 @@ class UI(Application):
         offx, offy, scale = self.state.scale
         pcbs = self.state.pcb
         cuts = self.state.cuts
-        if self.state.use_frame:
+        if self.state.use_frame and not self.state.tight:
             if self.state.frame_top > 0:
                 self.drawLine(canvas, 0, 0, self.state.frame_width*mm, 0, color=0x555555)
                 self.drawLine(canvas, self.state.frame_left*mm, self.state.frame_top*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_top*mm, color=0x555555)
@@ -626,12 +642,15 @@ class UI(Application):
 
                             with HBox():
                                 Checkbox("Use Frame", self.state("use_frame")).click(self.build)
-                                Spacer()
-                                RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
-                                RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                                Checkbox("Tight", self.state("tight")).click(self.build)
                                 Spacer()
                                 Label("Mill Fillets")
                                 TextField(self.state("mill_fillets")).change(self.build)
+
+                            with HBox():
+                                Label("Cut Method")
+                                RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
+                                RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
 
                             if self.state.use_frame:
                                 with HBox():
