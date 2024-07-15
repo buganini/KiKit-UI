@@ -527,42 +527,6 @@ class UI(Application):
         offx, offy, scale = self.state.scale
         pcbs = self.state.pcb
         cuts = self.state.cuts
-        if self.state.use_frame and not self.state.tight:
-            if self.state.frame_top > 0:
-                self.drawLine(canvas, 0, 0, self.state.frame_width*mm, 0, color=0x555555)
-                self.drawLine(canvas, self.state.frame_left*mm, self.state.frame_top*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_top*mm, color=0x555555)
-            else:
-                if self.state.frame_left > 0:
-                    self.drawLine(canvas, 0, 0, self.state.frame_left*mm, 0, color=0x555555)
-                if self.state.frame_right > 0:
-                    self.drawLine(canvas, self.state.frame_width*mm, 0, self.state.frame_width*mm-self.state.frame_right*mm, 0, color=0x555555)
-
-            if self.state.frame_bottom > 0:
-                self.drawLine(canvas, 0, self.state.frame_height*mm, self.state.frame_width*mm, self.state.frame_height*mm, color=0x555555)
-                self.drawLine(canvas, self.state.frame_left*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
-            else:
-                if self.state.frame_left > 0:
-                    self.drawLine(canvas, 0, self.state.frame_height*mm, self.state.frame_left*mm, self.state.frame_height*mm, color=0x555555)
-                if self.state.frame_right > 0:
-                    self.drawLine(canvas, self.state.frame_width*mm, self.state.frame_height*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_height*mm, color=0x555555)
-
-            if self.state.frame_left > 0:
-                self.drawLine(canvas, 0, 0, 0, self.state.frame_height*mm, color=0x555555)
-                self.drawLine(canvas, self.state.frame_left*mm, self.state.frame_top*mm, self.state.frame_left*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
-            else:
-                if self.state.frame_top > 0:
-                    self.drawLine(canvas, 0, 0, 0, self.state.frame_top*mm, color=0x555555)
-                if self.state.frame_bottom > 0:
-                    self.drawLine(canvas, 0, self.state.frame_height*mm, 0, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
-
-            if self.state.frame_right > 0:
-                self.drawLine(canvas, self.state.frame_width*mm, 0, self.state.frame_width*mm, self.state.frame_height*mm, color=0x555555)
-                self.drawLine(canvas, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_top*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
-            else:
-                if self.state.frame_top > 0:
-                    self.drawLine(canvas, self.state.frame_width*mm, 0, self.state.frame_width*mm, self.state.frame_top*mm, color=0x555555)
-                if self.state.frame_bottom > 0:
-                    self.drawLine(canvas, self.state.frame_width*mm, self.state.frame_height*mm, self.state.frame_width*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
 
         boardSubstrate = self.state.boardSubstrate
         if boardSubstrate:
