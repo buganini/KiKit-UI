@@ -26,6 +26,11 @@ class PCB():
         self.y = 0
         self.rotate = 0
 
+    def clone(self):
+        pcb = PCB(self.file)
+        pcb.rotate = self.rotate
+        return pcb
+
     def setTop(self, top):
         if self.rotate % 4 == 0:
             self.y = top
@@ -108,7 +113,7 @@ class UI(Application):
 
         inputs = sys.argv[1:]
         for boardfile in inputs:
-            self._addPCB(boardfile)
+            self._addPCB(PCB(boardfile))
 
         self.autoScale()
         self.build()
@@ -142,21 +147,20 @@ class UI(Application):
     def addPCB(self):
         boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
         if boardfile:
-            self._addPCB(boardfile)
+            self._addPCB(PCB(boardfile))
 
-    def _addPCB(self, boardfile):
-        pcb = PCB(boardfile)
+    def _addPCB(self, pcb):
         if len(self.state.pcb) > 0:
             last = self.state.pcb[-1]
             pcb.y = last.y + last.height + self.state.y_spacing * mm
         else:
-            pcb.y = self.state.frame_top * mm
+            pcb.y = self.state.frame_top * mm + self.state.y_spacing * mm
         self.state.pcb.append(pcb)
         self.autoScale()
         self.build()
 
     def duplicate(self, pcb):
-        self._addPCB(pcb.file)
+        self._addPCB(pcb.clone())
 
     def remove(self, i):
         self.state.pcb.pop(i)
@@ -649,9 +653,9 @@ class UI(Application):
                             if self.state.use_frame:
                                 with HBox():
                                     Label("Frame Size")
-                                    Label("W")
+                                    Label("Width")
                                     TextField(self.state("frame_width"))
-                                    Label("H")
+                                    Label("Height")
                                     TextField(self.state("frame_height"))
 
                                 with HBox():
@@ -668,13 +672,13 @@ class UI(Application):
                             with Grid():
                                 r = 0
 
-                                Label("V-Alignment").grid(row=r, column=1)
+                                Label("V-Alignment Spacing").grid(row=r, column=1)
                                 TextField(self.state("y_spacing")).layout(width=100).grid(row=r, column=2)
                                 Button("⤒").grid(row=r, column=3).click(self.snap_top)
                                 Button("⤓").grid(row=r, column=4).click(self.snap_bottom)
                                 r += 1
 
-                                Label("H-Alignment").grid(row=r, column=1)
+                                Label("H-Alignment Spacing").grid(row=r, column=1)
                                 TextField(self.state("x_spacing")).layout(width=100).grid(row=r, column=2)
                                 Button("⇤").grid(row=r, column=3).click(self.snap_left)
                                 Button("⇥").grid(row=r, column=4).click(self.snap_right)
