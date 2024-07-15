@@ -100,6 +100,7 @@ class UI(Application):
         self.state.focus = None
         self.state.cuts = []
         self.state.substrates = []
+        self.state.use_frame = True
         self.state.cut_method = "mb"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
@@ -416,29 +417,29 @@ class UI(Application):
         offx, offy, scale = self.state.scale
         pcbs = self.state.pcb
         cuts = self.state.cuts
-        boardSubstrate = self.state.boardSubstrate
-
-        x1, y1 = self.toCanvas(0, 0)
-        x2, y2 = self.toCanvas(self.state.frame_width * mm, self.state.frame_height * mm)
-        canvas.drawRect(x1, y1, x2, y2, stroke=0x333333)
-
-        if boardSubstrate:
-            exterior = boardSubstrate.exterior()
-            if isinstance(exterior, MultiPolygon):
-                for polygon in exterior.geoms:
-                    coords = polygon.exterior.coords
+        if self.state.use_frame:
+            x1, y1 = self.toCanvas(0, 0)
+            x2, y2 = self.toCanvas(self.state.frame_width * mm, self.state.frame_height * mm)
+            canvas.drawRect(x1, y1, x2, y2, stroke=0x333333)
+        else:
+            boardSubstrate = self.state.boardSubstrate
+            if boardSubstrate:
+                exterior = boardSubstrate.exterior()
+                if isinstance(exterior, MultiPolygon):
+                    for polygon in exterior.geoms:
+                        coords = polygon.exterior.coords
+                        for i in range(1, len(coords)):
+                            x1, y1 = self.toCanvas(coords[i-1][0], coords[i-1][1])
+                            x2, y2 = self.toCanvas(coords[i][0], coords[i][1])
+                            canvas.drawLine(x1, y1, x2, y2, color=0x555555)
+                elif isinstance(exterior, Polygon):
+                    coords = exterior.exterior.coords
                     for i in range(1, len(coords)):
                         x1, y1 = self.toCanvas(coords[i-1][0], coords[i-1][1])
                         x2, y2 = self.toCanvas(coords[i][0], coords[i][1])
                         canvas.drawLine(x1, y1, x2, y2, color=0x555555)
-            elif isinstance(exterior, Polygon):
-                coords = exterior.exterior.coords
-                for i in range(1, len(coords)):
-                    x1, y1 = self.toCanvas(coords[i-1][0], coords[i-1][1])
-                    x2, y2 = self.toCanvas(coords[i][0], coords[i][1])
-                    canvas.drawLine(x1, y1, x2, y2, color=0x555555)
-            else:
-                print("Unhandled board substrate exterior", exterior)
+                else:
+                    print("Unhandled board substrate exterior", exterior)
 
         for i,pcb in enumerate(pcbs):
             if pcb is self.state.focus:
@@ -501,26 +502,31 @@ class UI(Application):
 
                         if self.state.pcb:
                             with HBox():
-                                RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
-                                RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                                Checkbox("Use Frame", self.state("use_frame")).click(self.build)
                                 Spacer()
                                 Label("Unit: mm")
 
                             with HBox():
-                                Label("Frame")
-                                TextField(self.state("frame_width"))
-                                TextField(self.state("frame_height"))
+                                RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
+                                RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                                Spacer()
 
-                            with HBox():
-                                Label("Margin")
-                                Label("Top")
-                                TextField(self.state("margin_top"))
-                                Label("Bottom")
-                                TextField(self.state("margin_bottom"))
-                                Label("Left")
-                                TextField(self.state("margin_left"))
-                                Label("Right")
-                                TextField(self.state("margin_right"))
+                            if self.state.use_frame:
+                                with HBox():
+                                    Label("Frame")
+                                    TextField(self.state("frame_width"))
+                                    TextField(self.state("frame_height"))
+
+                                with HBox():
+                                    Label("Margin")
+                                    Label("Top")
+                                    TextField(self.state("margin_top"))
+                                    Label("Bottom")
+                                    TextField(self.state("margin_bottom"))
+                                    Label("Left")
+                                    TextField(self.state("margin_left"))
+                                    Label("Right")
+                                    TextField(self.state("margin_right"))
 
                             with Grid():
                                 r = 0
