@@ -3,12 +3,17 @@ from kikit import panelize, substrate
 from kikit.units import mm
 from shapely.geometry import Point, Polygon, MultiPolygon, LineString, GeometryCollection, box
 import pcbnew
-
+from enum import Enum
 import os
 import sys
+sys.path.append("/Users/buganini/repo/buganini/PUI")
 from PUI.PySide6 import *
 
 VC_EXTENT = 3
+
+class Tool(Enum):
+    NONE = 0
+    TAB = 1
 
 def nbbox(x1, y1, x2, y2):
     return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
@@ -97,6 +102,7 @@ class UI(Application):
         self.state.substrates = []
         self.state.use_frame = True
         self.state.tight = True
+        self.state.spacing = 3
         self.state.cut_method = "mb"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
@@ -106,8 +112,6 @@ class UI(Application):
         self.state.frame_bottom = 5
         self.state.frame_left = 0
         self.state.frame_right = 0
-        self.state.x_spacing = 5
-        self.state.y_spacing = 5
         self.state.mill_fillets = 1
 
         self.mousepos = None
@@ -155,9 +159,9 @@ class UI(Application):
     def _addPCB(self, pcb):
         if len(self.state.pcb) > 0:
             last = self.state.pcb[-1]
-            pcb.y = last.y + last.height + self.state.y_spacing * mm
+            pcb.y = last.y + last.height + self.state.spacing * mm
         else:
-            pcb.y = self.state.frame_top * mm + self.state.y_spacing * mm
+            pcb.y = (self.state.frame_top + self.state.spacing if self.state.frame_top > 0 else 0) * mm
         self.state.pcb.append(pcb)
         self.autoScale()
         self.build()
@@ -249,19 +253,18 @@ class UI(Application):
                 inheritDrc=False
             )
 
-
         if self.state.tight:
             x1, y1, x2, y2 = nbbox(*pcbs[0].bbox)
             x1 += pos_x
-            x2 += pos_x
             y1 += pos_y
+            x2 += pos_x
             y2 += pos_y
 
             if self.state.use_frame:
                 x1 = min(x1, pos_x)
                 y1 = min(y1, pos_y)
-                x2 = max(x2, pos_x+self.state.frame_width*mm)
-                y2 = max(y2, pos_y+self.state.frame_height*mm)
+                x2 = max(x2, pos_x + self.state.frame_width*mm)
+                y2 = max(y2, pos_y + self.state.frame_height*mm)
 
             for pcb in pcbs[1:]:
                 bbox = nbbox(*pcb.bbox)
@@ -273,7 +276,7 @@ class UI(Application):
             # board hole
             frameBody = box(x1, y1, x2, y2)
             for s in panel.substrates:
-                frameBody = frameBody.difference(s.exterior().buffer(3*mm, join_style="mitre"))
+                frameBody = frameBody.difference(s.exterior().buffer(self.state.spacing*mm, join_style="mitre"))
             panel.appendSubstrate(frameBody)
 
         panel.buildPartitionLineFromBB(boundarySubstrates=boundarySubstrates)
@@ -310,11 +313,11 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     if top is None:
-                        top = by2 + self.state.y_spacing * mm
+                        top = by2 + self.state.spacing * mm
                     else:
-                        top = max(top, by2 + self.state.y_spacing * mm)
+                        top = max(top, by2 + self.state.spacing * mm)
             if top is None:
-                pcb.setTop(self.state.frame_top * mm)
+                pcb.setTop((self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * mm)
             else:
                 pcb.setTop(top)
         self.autoScale()
@@ -337,11 +340,11 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     if bottom is None:
-                        bottom = by1 - self.state.y_spacing * mm
+                        bottom = by1 - self.state.spacing * mm
                     else:
-                        bottom = min(bottom, by1 - self.state.y_spacing * mm)
+                        bottom = min(bottom, by1 - self.state.spacing * mm)
             if bottom is None:
-                pcb.setBottom((self.state.frame_height - self.state.frame_bottom) * mm)
+                pcb.setBottom((self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * mm)
             else:
                 pcb.setBottom(bottom)
         self.autoScale()
@@ -364,11 +367,11 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
                     if left is None:
-                        left = bx2 + self.state.x_spacing * mm
+                        left = bx2 + self.state.spacing * mm
                     else:
-                        left = max(left, bx2 + self.state.x_spacing * mm)
+                        left = max(left, bx2 + self.state.spacing * mm)
             if left is None:
-                pcb.setLeft(self.state.frame_left * mm)
+                pcb.setLeft((self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * mm)
             else:
                 pcb.setLeft(left)
         self.autoScale()
@@ -391,11 +394,11 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
                     if right is None:
-                        right = bx1 - self.state.x_spacing * mm
+                        right = bx1 - self.state.spacing * mm
                     else:
-                        right = min(right, bx1 - self.state.x_spacing * mm)
+                        right = min(right, bx1 - self.state.spacing * mm)
             if right is None:
-                pcb.setRight((self.state.frame_width - self.state.frame_right) * mm)
+                pcb.setRight((self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * mm)
             else:
                 pcb.setRight(right)
         self.autoScale()
@@ -623,6 +626,10 @@ class UI(Application):
                                 Checkbox("Use Frame", self.state("use_frame")).click(self.build)
                                 Checkbox("Tight", self.state("tight")).click(self.build)
                                 Spacer()
+
+                            with HBox():
+                                Label("Spacing")
+                                TextField(self.state("spacing")).change(self.build)
                                 Label("Mill Fillets")
                                 TextField(self.state("mill_fillets")).change(self.build)
 
@@ -650,20 +657,12 @@ class UI(Application):
                                     Label("Right")
                                     TextField(self.state("frame_right"))
 
-                            with Grid():
-                                r = 0
-
-                                Label("V-Alignment Spacing").grid(row=r, column=1)
-                                TextField(self.state("y_spacing")).layout(width=100).grid(row=r, column=2)
-                                Button("⤒").grid(row=r, column=3).click(self.snap_top)
-                                Button("⤓").grid(row=r, column=4).click(self.snap_bottom)
-                                r += 1
-
-                                Label("H-Alignment Spacing").grid(row=r, column=1)
-                                TextField(self.state("x_spacing")).layout(width=100).grid(row=r, column=2)
-                                Button("⇤").grid(row=r, column=3).click(self.snap_left)
-                                Button("⇥").grid(row=r, column=4).click(self.snap_right)
-
+                            with HBox():
+                                Label("Align")
+                                Button("⤒").click(self.snap_top)
+                                Button("⤓").click(self.snap_bottom)
+                                Button("⇤").click(self.snap_left)
+                                Button("⇥").click(self.snap_right)
 
                             with HBox():
                                 Spacer()
