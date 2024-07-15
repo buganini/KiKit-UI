@@ -8,6 +8,8 @@ import os
 import sys
 from PUI.PySide6 import *
 
+VC_EXTENT = 3
+
 def nbbox(x1, y1, x2, y2):
     return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
 
@@ -486,31 +488,39 @@ class UI(Application):
                 for line in cuts:
                     p1 = line.coords[0]
                     p2 = line.coords[-1]
-                    x1, y1 = self.toCanvas(p1[0], p1[1])
-                    x2, y2 = self.toCanvas(p2[0], p2[1])
-                    canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+                    if p1[0]==p2[0]: # vertical
+                        x1, y1 = self.toCanvas(p1[0], -VC_EXTENT*mm)
+                        x2, y2 = self.toCanvas(p1[0], (self.state.frame_height+VC_EXTENT)*mm)
+                        canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+                    elif p1[1]==p2[1]: # horizontal
+                        x1, y1 = self.toCanvas(-VC_EXTENT*mm, p1[1])
+                        x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, p1[1])
+                        canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+                    else:
+                        x1, y1 = self.toCanvas(p1[0], p1[1])
+                        x2, y2 = self.toCanvas(p2[0], p2[1])
+                        canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
 
         if self.state.use_frame:
-            extent = 3
             if self.state.margin_top > 0:
                 y = self.state.margin_top * mm
-                x1, y1 = self.toCanvas(-extent*mm, y)
-                x2, y2 = self.toCanvas((self.state.frame_width+extent)*mm, y)
+                x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
+                x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
                 canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
             if self.state.margin_bottom > 0:
                 y = (self.state.frame_height - self.state.margin_top) * mm
-                x1, y1 = self.toCanvas(-extent*mm, y)
-                x2, y2 = self.toCanvas((self.state.frame_width+extent)*mm, y)
+                x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
+                x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
                 canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
             if self.state.margin_left > 0:
                 x = self.state.margin_left * mm
-                x1, y1 = self.toCanvas(x, -extent*mm)
-                x2, y2 = self.toCanvas(x, (self.state.frame_height+extent)*mm)
+                x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
+                x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
                 canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
             if self.state.margin_right > 0:
                 x = (self.state.frame_width - self.state.margin_right) * mm
-                x1, y1 = self.toCanvas(x, -extent*mm)
-                x2, y2 = self.toCanvas(x, (self.state.frame_height+extent)*mm)
+                x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
+                x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
                 canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
 
 
