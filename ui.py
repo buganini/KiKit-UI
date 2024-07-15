@@ -6,7 +6,6 @@ import pcbnew
 
 import os
 import sys
-sys.path.append("/Users/buganini/repo/buganini/PUI")
 from PUI.PySide6 import *
 
 def nbbox(x1, y1, x2, y2):
