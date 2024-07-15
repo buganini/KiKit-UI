@@ -413,10 +413,11 @@ class UI(Application):
 
     def drawPCB(self, canvas, index, pcb, highlight):
         stroke = 0x00FFFF if highlight else 0x777777
+        fill = 0x222222 if highlight else None
         x1, y1, x2, y2 = pcb.bbox
         x1, y1 = self.toCanvas(x1, y1)
         x2, y2 = self.toCanvas(x2, y2)
-        canvas.drawRect(x1, y1, x2, y2, stroke=stroke)
+        canvas.drawRect(x1, y1, x2, y2, stroke=stroke, fill=fill)
 
         if pcb.rotate % 4 == 0:
             tx1, ty1 = x1+10, y1+10
