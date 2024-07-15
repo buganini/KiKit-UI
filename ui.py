@@ -261,17 +261,6 @@ class UI(Application):
         if cut_method == "vc":
             panel.makeVCuts(cuts)
 
-        # Frame V-Cut
-        # if self.state.use_frame:
-        #     if self.state.frame_top > 0:
-        #         panel.addVCutH(pos_y + self.state.frame_top * mm)
-        #     if self.state.frame_bottom > 0:
-        #         panel.addVCutH(pos_y + self.state.frame_height * mm - self.state.frame_top * mm)
-        #     if self.state.frame_left > 0:
-        #         panel.addVCutV(pos_x + self.state.frame_left * mm)
-        #     if self.state.frame_right > 0:
-        #         panel.addVCutV(pos_x + self.state.frame_width * mm - self.state.frame_right * mm)
-
         if save:
             panel.save()
 
@@ -510,9 +499,6 @@ class UI(Application):
         pcbs = self.state.pcb
         cuts = self.state.cuts
         if self.state.use_frame:
-            # x1, y1 = self.toCanvas(0, 0)
-            # x2, y2 = self.toCanvas(self.state.frame_width * mm, self.state.frame_height * mm)
-            # canvas.drawRect(x1, y1, x2, y2, stroke=0x333333)
             if self.state.frame_top > 0:
                 self.drawLine(canvas, 0, 0, self.state.frame_width*mm, 0, color=0x555555)
                 self.drawLine(canvas, self.state.frame_left*mm, self.state.frame_top*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_top*mm, color=0x555555)
@@ -602,30 +588,6 @@ class UI(Application):
                         x1, y1 = self.toCanvas(p1[0], p1[1])
                         x2, y2 = self.toCanvas(p2[0], p2[1])
                         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-
-        # Frame V-Cut
-        # if self.state.use_frame:
-        #     if self.state.frame_top > 0:
-        #         y = self.state.frame_top * mm
-        #         x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
-        #         x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
-        #         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-        #     if self.state.frame_bottom > 0:
-        #         y = (self.state.frame_height - self.state.frame_top) * mm
-        #         x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
-        #         x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
-        #         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-        #     if self.state.frame_left > 0:
-        #         x = self.state.frame_left * mm
-        #         x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
-        #         x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
-        #         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-        #     if self.state.frame_right > 0:
-        #         x = (self.state.frame_width - self.state.frame_right) * mm
-        #         x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
-        #         x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
-        #         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-
 
     def content(self):
         with Window(size=(1300, 768)).keypress(self.keypress):
