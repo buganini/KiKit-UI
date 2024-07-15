@@ -13,8 +13,9 @@ VC_EXTENT = 3
 def nbbox(x1, y1, x2, y2):
     return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
 
-class PCB():
+class PCB(StateObject):
     def __init__(self, boardfile):
+        super().__init__()
         self.file = boardfile
         board = pcbnew.LoadBoard(boardfile)
         bbox = panelize.findBoardBoundingBox(board)
@@ -438,7 +439,6 @@ class UI(Application):
             if self.mouse_dragging:
                 self.mouse_dragging.x += int(dx)
                 self.mouse_dragging.y += int(dy)
-                self.state()
             else:
                 offx, offy, scale = self.state.scale
                 offx += pdx
