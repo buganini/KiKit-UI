@@ -252,6 +252,10 @@ class UI(Application):
 
         if self.state.tight:
             x1, y1, x2, y2 = nbbox(*pcbs[0].bbox)
+            x1 += pos_x
+            x2 += pos_x
+            y1 += pos_y
+            y2 += pos_y
 
             if self.state.use_frame:
                 x1 = min(x1, pos_x)
@@ -261,17 +265,15 @@ class UI(Application):
 
             for pcb in pcbs[1:]:
                 bbox = nbbox(*pcb.bbox)
-                x1 = min(x1, bbox[0])
-                x2 = max(x2, bbox[2])
-                y1 = min(y1, bbox[1])
-                y2 = max(y2, bbox[3])
+                x1 = min(x1, pos_x+bbox[0])
+                y1 = min(y1, pos_y+bbox[1])
+                x2 = max(x2, pos_x+bbox[2])
+                y2 = max(y2, pos_y+bbox[3])
 
             # board hole
-            boardSlot = GeometryCollection()
+            frameBody = box(x1, y1, x2, y2)
             for s in panel.substrates:
-                boardSlot = boardSlot.union(s.exterior())
-            boardSlot = boardSlot.buffer(3*mm, join_style="mitre")
-            frameBody = box(x1, y1, x2, y2).difference(boardSlot)
+                frameBody = frameBody.difference(s.exterior().buffer(3*mm, join_style="mitre"))
             panel.appendSubstrate(frameBody)
 
         panel.buildPartitionLineFromBB(boundarySubstrates=boundarySubstrates)
