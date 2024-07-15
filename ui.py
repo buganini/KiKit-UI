@@ -95,10 +95,10 @@ class UI(Application):
         self.state.mb_spacing = 0.75 * mm
         self.state.frame_width = 100
         self.state.frame_height = 100
-        self.state.margin_top = 5
-        self.state.margin_bottom = 5
-        self.state.margin_left = 0
-        self.state.margin_right = 0
+        self.state.frame_top = 5
+        self.state.frame_bottom = 5
+        self.state.frame_left = 0
+        self.state.frame_right = 0
         self.state.x_spacing = 5
         self.state.y_spacing = 5
 
@@ -150,7 +150,7 @@ class UI(Application):
             last = self.state.pcb[-1]
             pcb.y = last.y + last.height + self.state.y_spacing * mm
         else:
-            pcb.y = self.state.margin_top * mm
+            pcb.y = self.state.frame_top * mm
         self.state.pcb.append(pcb)
         self.autoScale()
         self.build()
@@ -185,12 +185,34 @@ class UI(Application):
         panel = panelize.Panel(self.state.output)
 
         if self.state.use_frame:
-            panel.appendSubstrate(Polygon([
-                [pos_x, pos_y],
-                [pos_x+0, pos_y+self.state.frame_width*mm],
-                [pos_x+self.state.frame_height*mm, pos_y+self.state.frame_width*mm],
-                [pos_x+self.state.frame_height*mm, pos_y],
-            ]))
+            if self.state.frame_top > 0:
+                panel.appendSubstrate(Polygon([
+                    [pos_x, pos_y],
+                    [pos_x+self.state.frame_width*mm, pos_y],
+                    [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_top*mm],
+                    [pos_x, pos_y+self.state.frame_top*mm],
+                ]))
+            if self.state.frame_bottom > 0:
+                panel.appendSubstrate(Polygon([
+                    [pos_x, pos_y+self.state.frame_height*mm],
+                    [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm],
+                    [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm-self.state.frame_bottom*mm],
+                    [pos_x, pos_y+self.state.frame_height*mm-self.state.frame_bottom*mm],
+                ]))
+            if self.state.frame_left > 0:
+                panel.appendSubstrate(Polygon([
+                    [pos_x, pos_y],
+                    [pos_x, pos_y+self.state.frame_height*mm],
+                    [pos_x+self.state.frame_left*mm, pos_y+self.state.frame_height*mm],
+                    [pos_x+self.state.frame_left*mm, pos_y],
+                ]))
+            if self.state.frame_right > 0:
+                panel.appendSubstrate(Polygon([
+                    [pos_x+self.state.frame_width*mm, pos_y],
+                    [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm],
+                    [pos_x+self.state.frame_width*mm-self.state.frame_right*mm, pos_y+self.state.frame_height*mm],
+                    [pos_x+self.state.frame_width*mm-self.state.frame_right*mm, pos_y],
+                ]))
 
         for pcb in pcbs:
             x1, y1, x2, y2 = pcb.bbox
@@ -215,15 +237,16 @@ class UI(Application):
         if cut_method == "vc":
             panel.makeVCuts(cuts)
 
-        if self.state.use_frame:
-            if self.state.margin_top > 0:
-                panel.addVCutH(pos_y + self.state.margin_top * mm)
-            if self.state.margin_bottom > 0:
-                panel.addVCutH(pos_y + self.state.frame_height * mm - self.state.margin_top * mm)
-            if self.state.margin_left > 0:
-                panel.addVCutV(pos_x + self.state.margin_left * mm)
-            if self.state.margin_right > 0:
-                panel.addVCutV(pos_x + self.state.frame_width * mm - self.state.margin_right * mm)
+        # Frame V-Cut
+        # if self.state.use_frame:
+        #     if self.state.frame_top > 0:
+        #         panel.addVCutH(pos_y + self.state.frame_top * mm)
+        #     if self.state.frame_bottom > 0:
+        #         panel.addVCutH(pos_y + self.state.frame_height * mm - self.state.frame_top * mm)
+        #     if self.state.frame_left > 0:
+        #         panel.addVCutV(pos_x + self.state.frame_left * mm)
+        #     if self.state.frame_right > 0:
+        #         panel.addVCutV(pos_x + self.state.frame_width * mm - self.state.frame_right * mm)
 
         if save:
             panel.save()
@@ -249,7 +272,7 @@ class UI(Application):
                     else:
                         top = max(top, by2 + self.state.y_spacing * mm)
             if top is None:
-                pcb.setTop(self.state.margin_top * mm)
+                pcb.setTop(self.state.frame_top * mm)
             else:
                 pcb.setTop(top)
         self.autoScale()
@@ -276,7 +299,7 @@ class UI(Application):
                     else:
                         bottom = min(bottom, by1 - self.state.y_spacing * mm)
             if bottom is None:
-                pcb.setBottom((self.state.frame_height - self.state.margin_bottom) * mm)
+                pcb.setBottom((self.state.frame_height - self.state.frame_bottom) * mm)
             else:
                 pcb.setBottom(bottom)
         self.autoScale()
@@ -303,7 +326,7 @@ class UI(Application):
                     else:
                         left = max(left, bx2 + self.state.x_spacing * mm)
             if left is None:
-                pcb.setLeft(self.state.margin_left * mm)
+                pcb.setLeft(self.state.frame_left * mm)
             else:
                 pcb.setLeft(left)
         self.autoScale()
@@ -330,7 +353,7 @@ class UI(Application):
                     else:
                         right = min(right, bx1 - self.state.x_spacing * mm)
             if right is None:
-                pcb.setRight((self.state.frame_width - self.state.margin_right) * mm)
+                pcb.setRight((self.state.frame_width - self.state.frame_right) * mm)
             else:
                 pcb.setRight(right)
         self.autoScale()
@@ -454,14 +477,54 @@ class UI(Application):
             tx1, ty1 = x1-10, y1+10
         canvas.drawText(tx1, ty1, f"{index+1}", rotate=pcb.rotate*-90)
 
+    def drawLine(self, canvas, x1, y1, x2, y2, color):
+        x1, y1 = self.toCanvas(x1, y1)
+        x2, y2 = self.toCanvas(x2, y2)
+        canvas.drawLine(x1, y1, x2, y2, color=color)
+
     def painter(self, canvas):
         offx, offy, scale = self.state.scale
         pcbs = self.state.pcb
         cuts = self.state.cuts
         if self.state.use_frame:
-            x1, y1 = self.toCanvas(0, 0)
-            x2, y2 = self.toCanvas(self.state.frame_width * mm, self.state.frame_height * mm)
-            canvas.drawRect(x1, y1, x2, y2, stroke=0x333333)
+            # x1, y1 = self.toCanvas(0, 0)
+            # x2, y2 = self.toCanvas(self.state.frame_width * mm, self.state.frame_height * mm)
+            # canvas.drawRect(x1, y1, x2, y2, stroke=0x333333)
+            if self.state.frame_top > 0:
+                self.drawLine(canvas, 0, 0, self.state.frame_width*mm, 0, color=0x555555)
+                self.drawLine(canvas, self.state.frame_left*mm, self.state.frame_top*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_top*mm, color=0x555555)
+            else:
+                if self.state.frame_left > 0:
+                    self.drawLine(canvas, 0, 0, self.state.frame_left*mm, 0, color=0x555555)
+                if self.state.frame_right > 0:
+                    self.drawLine(canvas, self.state.frame_width*mm, 0, self.state.frame_width*mm-self.state.frame_right*mm, 0, color=0x555555)
+
+            if self.state.frame_bottom > 0:
+                self.drawLine(canvas, 0, self.state.frame_height*mm, self.state.frame_width*mm, self.state.frame_height*mm, color=0x555555)
+                self.drawLine(canvas, self.state.frame_left*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
+            else:
+                if self.state.frame_left > 0:
+                    self.drawLine(canvas, 0, self.state.frame_height*mm, self.state.frame_left*mm, self.state.frame_height*mm, color=0x555555)
+                if self.state.frame_right > 0:
+                    self.drawLine(canvas, self.state.frame_width*mm, self.state.frame_height*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_height*mm, color=0x555555)
+
+            if self.state.frame_left > 0:
+                self.drawLine(canvas, 0, 0, 0, self.state.frame_height*mm, color=0x555555)
+                self.drawLine(canvas, self.state.frame_left*mm, self.state.frame_top*mm, self.state.frame_left*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
+            else:
+                if self.state.frame_top > 0:
+                    self.drawLine(canvas, 0, 0, 0, self.state.frame_top*mm, color=0x555555)
+                if self.state.frame_bottom > 0:
+                    self.drawLine(canvas, 0, self.state.frame_height*mm, 0, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
+
+            if self.state.frame_right > 0:
+                self.drawLine(canvas, self.state.frame_width*mm, 0, self.state.frame_width*mm, self.state.frame_height*mm, color=0x555555)
+                self.drawLine(canvas, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_top*mm, self.state.frame_width*mm-self.state.frame_right*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
+            else:
+                if self.state.frame_top > 0:
+                    self.drawLine(canvas, self.state.frame_width*mm, 0, self.state.frame_width*mm, self.state.frame_top*mm, color=0x555555)
+                if self.state.frame_bottom > 0:
+                    self.drawLine(canvas, self.state.frame_width*mm, self.state.frame_height*mm, self.state.frame_width*mm, self.state.frame_height*mm-self.state.frame_bottom*mm, color=0x555555)
         else:
             boardSubstrate = self.state.boardSubstrate
             if boardSubstrate:
@@ -470,15 +533,11 @@ class UI(Application):
                     for polygon in exterior.geoms:
                         coords = polygon.exterior.coords
                         for i in range(1, len(coords)):
-                            x1, y1 = self.toCanvas(coords[i-1][0], coords[i-1][1])
-                            x2, y2 = self.toCanvas(coords[i][0], coords[i][1])
-                            canvas.drawLine(x1, y1, x2, y2, color=0x555555)
+                            self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
                 elif isinstance(exterior, Polygon):
                     coords = exterior.exterior.coords
                     for i in range(1, len(coords)):
-                        x1, y1 = self.toCanvas(coords[i-1][0], coords[i-1][1])
-                        x2, y2 = self.toCanvas(coords[i][0], coords[i][1])
-                        canvas.drawLine(x1, y1, x2, y2, color=0x555555)
+                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
                 else:
                     print("Unhandled board substrate exterior", exterior)
 
@@ -521,27 +580,28 @@ class UI(Application):
                         x2, y2 = self.toCanvas(p2[0], p2[1])
                         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
 
-        if self.state.use_frame:
-            if self.state.margin_top > 0:
-                y = self.state.margin_top * mm
-                x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
-                x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
-                canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-            if self.state.margin_bottom > 0:
-                y = (self.state.frame_height - self.state.margin_top) * mm
-                x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
-                x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
-                canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-            if self.state.margin_left > 0:
-                x = self.state.margin_left * mm
-                x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
-                x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
-                canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-            if self.state.margin_right > 0:
-                x = (self.state.frame_width - self.state.margin_right) * mm
-                x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
-                x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
-                canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+        # Frame V-Cut
+        # if self.state.use_frame:
+        #     if self.state.frame_top > 0:
+        #         y = self.state.frame_top * mm
+        #         x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
+        #         x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
+        #         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+        #     if self.state.frame_bottom > 0:
+        #         y = (self.state.frame_height - self.state.frame_top) * mm
+        #         x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
+        #         x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
+        #         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+        #     if self.state.frame_left > 0:
+        #         x = self.state.frame_left * mm
+        #         x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
+        #         x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
+        #         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+        #     if self.state.frame_right > 0:
+        #         x = (self.state.frame_width - self.state.frame_right) * mm
+        #         x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
+        #         x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
+        #         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
 
 
     def content(self):
@@ -588,20 +648,22 @@ class UI(Application):
 
                             if self.state.use_frame:
                                 with HBox():
-                                    Label("Frame")
+                                    Label("Frame Size")
+                                    Label("W")
                                     TextField(self.state("frame_width"))
+                                    Label("H")
                                     TextField(self.state("frame_height"))
 
                                 with HBox():
-                                    Label("Margin")
+                                    Label("Frame Width")
                                     Label("Top")
-                                    TextField(self.state("margin_top"))
+                                    TextField(self.state("frame_top"))
                                     Label("Bottom")
-                                    TextField(self.state("margin_bottom"))
+                                    TextField(self.state("frame_bottom"))
                                     Label("Left")
-                                    TextField(self.state("margin_left"))
+                                    TextField(self.state("frame_left"))
                                     Label("Right")
-                                    TextField(self.state("margin_right"))
+                                    TextField(self.state("frame_right"))
 
                             with Grid():
                                 r = 0
@@ -640,7 +702,6 @@ class UI(Application):
                                     Spacer()
 
                             Spacer()
-
 
 ui = UI()
 ui.run()
