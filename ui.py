@@ -1,7 +1,7 @@
 #!/usr/bin/env /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
 from kikit import panelize, substrate
 from kikit.units import mm
-from shapely import Point, Polygon, MultiPolygon, LineString
+from shapely.geometry import Point, Polygon, MultiPolygon, LineString, GeometryCollection, box
 import pcbnew
 
 import os
@@ -249,20 +249,30 @@ class UI(Application):
                 inheritDrc=False
             )
 
+
         if self.state.tight:
-            minWidth = 0
-            minHeight = 0
+            x1, y1, x2, y2 = nbbox(*pcbs[0].bbox)
+
             if self.state.use_frame:
-                minWidth = self.state.frame_width*mm
-                minHeight = self.state.frame_height*mm
-            panel.makeTightFrame(
-                width=0*mm,
-                slotwidth=3*mm,
-                hspace=3*mm,
-                vspace=3*mm,
-                minWidth=minWidth,
-                minHeight=minHeight,
-            )
+                x1 = min(x1, pos_x)
+                y1 = min(y1, pos_y)
+                x2 = max(x2, pos_x+self.state.frame_width*mm)
+                y2 = max(y2, pos_y+self.state.frame_height*mm)
+
+            for pcb in pcbs[1:]:
+                bbox = nbbox(*pcb.bbox)
+                x1 = min(x1, bbox[0])
+                x2 = max(x2, bbox[2])
+                y1 = min(y1, bbox[1])
+                y2 = max(y2, bbox[3])
+
+            # board hole
+            boardSlot = GeometryCollection()
+            for s in panel.substrates:
+                boardSlot = boardSlot.union(s.exterior())
+            boardSlot = boardSlot.buffer(3*mm, join_style="mitre")
+            frameBody = box(x1, y1, x2, y2).difference(boardSlot)
+            panel.appendSubstrate(frameBody)
 
         panel.buildPartitionLineFromBB(boundarySubstrates=boundarySubstrates)
         cuts = panel.buildFullTabs(cutoutDepth=3*mm)
