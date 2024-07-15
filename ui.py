@@ -228,12 +228,17 @@ class UI(Application):
         if save:
             panel.save()
 
-    def snap_top(self):
+    def snap_top(self, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
         todo.sort(key=lambda pcb: nbbox(*pcb.bbox)[1])
-        for i, pcb in enumerate(todo):
+        start = 0
+        end = len(todo)
+        if pcb:
+            start = todo.index(pcb)
+            end = start+1
+        for i, pcb in enumerate(todo[start:end], start):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
             top = None
             for d in todo[:i][::-1]:
@@ -250,12 +255,17 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def snap_bottom(self):
+    def snap_bottom(self, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
         todo.sort(key=lambda pcb: -nbbox(*pcb.bbox)[3])
-        for i, pcb in enumerate(todo):
+        start = 0
+        end = len(todo)
+        if pcb:
+            start = todo.index(pcb)
+            end = start+1
+        for i, pcb in enumerate(todo[start:end], start):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
             bottom = None
             for d in todo[:i][::-1]:
@@ -272,12 +282,17 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def snap_left(self):
+    def snap_left(self, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
         todo.sort(key=lambda pcb: nbbox(*pcb.bbox)[0])
-        for i, pcb in enumerate(todo):
+        start = 0
+        end = len(todo)
+        if pcb:
+            start = todo.index(pcb)
+            end = start+1
+        for i, pcb in enumerate(todo[start:end], start):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
             left = None
             for d in todo[:i][::-1]:
@@ -294,12 +309,17 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def snap_right(self):
+    def snap_right(self, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
         todo.sort(key=lambda pcb: -nbbox(*pcb.bbox)[2])
-        for i, pcb in enumerate(todo):
+        start = 0
+        end = len(todo)
+        if pcb:
+            start = todo.index(pcb)
+            end = start+1
+        for i, pcb in enumerate(todo[start:end], start):
             ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
             right = None
             for d in todo[:i][::-1]:
@@ -555,11 +575,13 @@ class UI(Application):
 
                         if self.state.pcb:
                             with HBox():
-                                Checkbox("Use Frame", self.state("use_frame")).click(self.build)
+                                Label("Global")
                                 Spacer()
                                 Label("Unit: mm")
 
                             with HBox():
+                                Checkbox("Use Frame", self.state("use_frame")).click(self.build)
+                                Spacer()
                                 RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
                                 RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
                                 Spacer()
@@ -584,24 +606,41 @@ class UI(Application):
                             with Grid():
                                 r = 0
 
-                                Button("Snap Top").grid(row=r, column=0).click(self.snap_top)
-                                TextField(self.state("y_spacing")).layout(width=100).grid(row=r, column=1)
-                                Button("Snap Bottom").grid(row=r, column=2).click(self.snap_bottom)
+                                Label("V-Alignment").grid(row=r, column=1)
+                                TextField(self.state("y_spacing")).layout(width=100).grid(row=r, column=2)
+                                Button("⤒").grid(row=r, column=3).click(self.snap_top)
+                                Button("⤓").grid(row=r, column=4).click(self.snap_bottom)
                                 r += 1
 
-                                Button("Snap Left").grid(row=r, column=0).click(self.snap_left)
-                                TextField(self.state("x_spacing")).layout(width=100).grid(row=r, column=1)
-                                Button("Snap Right").grid(row=r, column=2).click(self.snap_right)
+                                Label("H-Alignment").grid(row=r, column=1)
+                                TextField(self.state("x_spacing")).layout(width=100).grid(row=r, column=2)
+                                Button("⇤").grid(row=r, column=3).click(self.snap_left)
+                                Button("⇥").grid(row=r, column=4).click(self.snap_right)
 
+
+                            with HBox():
+                                Spacer()
+                                Button("Save").click(self.build, True)
 
                             if self.state.focus:
+                                Label("Selected PCB")
+
                                 with HBox():
+                                    Label("Rotate")
                                     Button("CCW (r)").click(self.rotateCCW)
                                     Button("CW (R)").click(self.rotateCW)
+                                    Spacer()
+
+                                with HBox():
+                                    Label("Align")
+                                    Button("⤒").click(self.snap_top, pcb=self.state.focus)
+                                    Button("⤓").click(self.snap_bottom, pcb=self.state.focus)
+                                    Button("⇤").click(self.snap_left, pcb=self.state.focus)
+                                    Button("⇥").click(self.snap_right, pcb=self.state.focus)
+                                    Spacer()
 
                             Spacer()
 
-                            Button("Save").click(self.build, True)
 
 ui = UI()
 ui.run()
