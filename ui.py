@@ -443,7 +443,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.contains(tabs[1]):
+                                    if pcb.contains(tab[1]):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -467,7 +467,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.contains(tabs[1]):
+                                    if pcb.contains(tab[1]):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -490,7 +490,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.contains(tabs[1]):
+                                    if pcb.contains(tab[1]):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -512,7 +512,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.contains(tabs[1]):
+                                    if pcb.contains(tab[1]):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
