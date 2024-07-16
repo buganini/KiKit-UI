@@ -4,6 +4,7 @@ from kikit.units import mm
 from shapely.geometry import Point, Polygon, MultiPolygon, LineString, GeometryCollection, box
 import pcbnew
 from enum import Enum
+import traceback
 import os
 import sys
 sys.path.append("/Users/buganini/repo/buganini/PUI")
@@ -102,6 +103,7 @@ class UI(Application):
         self.state.substrates = []
         self.state.use_frame = True
         self.state.tight = True
+        self.state.auto_tab = True
         self.state.spacing = 3
         self.state.cut_method = "mb"
         self.state.mb_diameter = 0.5 * mm
@@ -178,6 +180,8 @@ class UI(Application):
         pcbs = self.state.pcb
         if len(pcbs) == 0:
             return
+
+        spacing = self.state.spacing
 
         pos_x = 0
         pos_y = 0
@@ -276,12 +280,44 @@ class UI(Application):
             # board hole
             frameBody = box(x1, y1, x2, y2)
             for s in panel.substrates:
-                frameBody = frameBody.difference(s.exterior().buffer(self.state.spacing*mm, join_style="mitre"))
+                frameBody = frameBody.difference(s.exterior().buffer(spacing*mm, join_style="mitre"))
             panel.appendSubstrate(frameBody)
 
         panel.buildPartitionLineFromBB(boundarySubstrates=boundarySubstrates)
-        # cuts = panel.buildFullTabs(cutoutDepth=3*mm)
+
         cuts = []
+        if self.state.auto_tab:
+            for pcb in pcbs:
+                x1, y1, x2, y2 = nbbox(*pcb.bbox)
+                try: # top
+                    tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm), (0,1), 3*mm)
+                    if len(tab) == 2: # tab, tabface
+                        panel.appendSubstrate(tab[0])
+                        cuts.append(tab[1])
+                except:
+                    traceback.print_exc()
+                try: # bottom
+                    tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm), (0,-1), 3*mm)
+                    if len(tab) == 2: # tab, tabface
+                        panel.appendSubstrate(tab[0])
+                        cuts.append(tab[1])
+                except:
+                    traceback.print_exc()
+                try: # left
+                    tab = panel.boardSubstrate.tab((pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2), (-1,0), 3*mm)
+                    if len(tab) == 2: # tab, tabface
+                        panel.appendSubstrate(tab[0])
+                        cuts.append(tab[1])
+                except:
+                    traceback.print_exc()
+                try: # right
+                    tab = panel.boardSubstrate.tab((pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2), (1,0), 3*mm)
+                    if len(tab) == 2: # tab, tabface
+                        panel.appendSubstrate(tab[0])
+                        cuts.append(tab[1])
+                except:
+                    traceback.print_exc()
+
         if not save:
             panel.addMillFillets(self.state.mill_fillets*mm)
             self.state.cuts = cuts
@@ -504,12 +540,11 @@ class UI(Application):
                 self.build()
 
     def drawPCB(self, canvas, index, pcb, highlight):
-        stroke = 0x00FFFF if highlight else 0x777777
-        fill = 0x222222 if highlight else None
+        fill = 0x113311 if highlight else 0x112211
         x1, y1, x2, y2 = pcb.bbox
         x1, y1 = self.toCanvas(x1, y1)
         x2, y2 = self.toCanvas(x2, y2)
-        canvas.drawRect(x1, y1, x2, y2, stroke=stroke, fill=fill)
+        canvas.drawRect(x1, y1, x2, y2, fill=fill)
 
         if pcb.rotate % 4 == 0:
             tx1, ty1 = x1+10, y1+10
@@ -531,6 +566,16 @@ class UI(Application):
         pcbs = self.state.pcb
         cuts = self.state.cuts
 
+        for i,pcb in enumerate(pcbs):
+            if pcb is self.state.focus:
+                continue
+            self.drawPCB(canvas, i, pcb, False)
+
+        for i,pcb in enumerate(pcbs):
+            if pcb is not self.state.focus:
+                continue
+            self.drawPCB(canvas, i, pcb, True)
+
         boardSubstrate = self.state.boardSubstrate
         if boardSubstrate:
             if isinstance(boardSubstrate.substrates, MultiPolygon):
@@ -547,16 +592,6 @@ class UI(Application):
                     coords = interior.coords
                     for i in range(1, len(coords)):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
-
-        for i,pcb in enumerate(pcbs):
-            if pcb is self.state.focus:
-                continue
-            self.drawPCB(canvas, i, pcb, False)
-
-        for i,pcb in enumerate(pcbs):
-            if pcb is not self.state.focus:
-                continue
-            self.drawPCB(canvas, i, pcb, True)
 
         if not self.mousehold or not self.mousemoved or not self.mouse_dragging:
             cut_method = self.state.cut_method
@@ -625,6 +660,7 @@ class UI(Application):
                             with HBox():
                                 Checkbox("Use Frame", self.state("use_frame")).click(self.build)
                                 Checkbox("Tight", self.state("tight")).click(self.build)
+                                Checkbox("Auto Tab", self.state("auto_tab")).click(self.build)
                                 Spacer()
 
                             with HBox():
