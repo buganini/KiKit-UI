@@ -108,7 +108,8 @@ class UI(Application):
         self.state.canvas_width = 800
         self.state.canvas_height = 800
         self.state.focus = None
-        self.state.cuts = []
+        self.state.vcuts = []
+        self.state.bites = []
         self.state.dbg_pts = []
         self.state.substrates = []
         self.state.use_frame = True
@@ -116,7 +117,7 @@ class UI(Application):
         self.state.auto_tab = True
         self.state.spacing = 3.0
         self.state.tab_width = 3.0
-        self.state.cut_method = "mb"
+        self.state.cut_method = "auto"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
         self.state.frame_width = 100
@@ -387,14 +388,46 @@ class UI(Application):
         if not save:
             panel.addMillFillets(self.state.mill_fillets*mm)
             self.state.dbg_pts = dbg_pts
-            self.state.cuts = cuts
             self.state.boardSubstrate = panel.boardSubstrate
 
+        vcuts = []
+        bites = []
         cut_method = self.state.cut_method
         if cut_method == "mb":
+            bites.extend(cuts)
             panel.makeMouseBites(cuts, diameter=self.state.mb_diameter, spacing=self.state.mb_spacing, offset=0 * mm, prolongation=0 * mm)
-        if cut_method == "vc":
+        elif cut_method == "vc":
             panel.makeVCuts(cuts)
+            vcuts.extend(cuts)
+        elif cut_method == "auto":
+            for line in cuts:
+                p1 = line.coords[0]
+                p2 = line.coords[-1]
+                if p1[0]==p2[0]: # vertical
+                    for pcb in pcbs:
+                        x1, y1, x2, y2 = pcb.nbbox
+                        if pos_x+x1 < p1[0] and p1[0] < pos_x+x2:
+                            panel.makeMouseBites([line], diameter=self.state.mb_diameter, spacing=self.state.mb_spacing, offset=0 * mm, prolongation=0 * mm)
+                            bites.append(line)
+                            break
+                    else:
+                        panel.makeVCuts([line])
+                        vcuts.append(line)
+
+                elif p1[1]==p2[1]: # horizontal
+                    for pcb in pcbs:
+                        x1, y1, x2, y2 = pcb.nbbox
+                        if pos_y+y1 < p1[1] and p1[1] < pos_y+y2:
+                            panel.makeMouseBites([line], diameter=self.state.mb_diameter, spacing=self.state.mb_spacing, offset=0 * mm, prolongation=0 * mm)
+                            bites.append(line)
+                            break
+                    else:
+                        panel.makeVCuts([line])
+                        vcuts.append(line)
+
+        if not save:
+            self.state.vcuts = vcuts
+            self.state.bites = bites
 
         if save:
             panel.save()
@@ -640,10 +673,30 @@ class UI(Application):
         x2, y2 = self.toCanvas(x2, y2)
         canvas.drawLine(x1, y1, x2, y2, color=color)
 
+    def drawVCutV(self, canvas, x):
+        x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
+        x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
+        canvas.drawLine(x1, y1, x2, y2, color=0x4396E2)
+
+    def drawVCutH(self, canvas, y):
+        x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
+        x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
+        canvas.drawLine(x1, y1, x2, y2, color=0x4396E2)
+
+    def drawMousebites(self, canvas, line):
+        offx, offy, scale = self.state.scale
+        mb_diameter = self.state.mb_diameter
+        mb_spacing = self.state.mb_spacing
+        i = 0
+        while i * mb_spacing <= line.length:
+            p = line.interpolate(i*mb_spacing)
+            x, y = self.toCanvas(p.x, p.y)
+            canvas.drawEllipse(x, y, mb_diameter/2*scale, mb_diameter/2*scale, stroke=0xFFFF00)
+            i += 1
+
     def painter(self, canvas):
         offx, offy, scale = self.state.scale
         pcbs = self.state.pcb
-        cuts = self.state.cuts
 
         for i,pcb in enumerate(pcbs):
             if pcb is self.state.focus:
@@ -673,33 +726,17 @@ class UI(Application):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
 
         if not self.mousehold or not self.mousemoved or not self.mouse_dragging:
-            cut_method = self.state.cut_method
-            mb_diameter = self.state.mb_diameter
-            mb_spacing = self.state.mb_spacing
-            if cut_method == "mb":
-                for line in cuts:
-                    i = 0
-                    while i * mb_spacing <= line.length:
-                        p = line.interpolate(i*mb_spacing)
-                        x, y = self.toCanvas(p.x, p.y)
-                        canvas.drawEllipse(x, y, mb_diameter/2*scale, mb_diameter/2*scale, stroke=0xFFFF00)
-                        i += 1
-            if cut_method == "vc":
-                for line in cuts:
-                    p1 = line.coords[0]
-                    p2 = line.coords[-1]
-                    if p1[0]==p2[0]: # vertical
-                        x1, y1 = self.toCanvas(p1[0], -VC_EXTENT*mm)
-                        x2, y2 = self.toCanvas(p1[0], (self.state.frame_height+VC_EXTENT)*mm)
-                        canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-                    elif p1[1]==p2[1]: # horizontal
-                        x1, y1 = self.toCanvas(-VC_EXTENT*mm, p1[1])
-                        x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, p1[1])
-                        canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
-                    else:
-                        x1, y1 = self.toCanvas(p1[0], p1[1])
-                        x2, y2 = self.toCanvas(p2[0], p2[1])
-                        canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+            bites = self.state.bites
+            vcuts = self.state.vcuts
+            for line in bites:
+                self.drawMousebites(canvas, line)
+            for line in vcuts:
+                p1 = line.coords[0]
+                p2 = line.coords[-1]
+                if p1[0]==p2[0]: # vertical
+                    self.drawVCutV(canvas, p1[0])
+                elif p1[1]==p2[1]: # horizontal
+                    self.drawVCutH(canvas, p1[1])
 
             # for dbg_pts in self.state.dbg_pts:
             #     x, y = self.toCanvas(dbg_pts[0], dbg_pts[1])
@@ -724,7 +761,8 @@ class UI(Application):
                             Spacer()
 
                         self.state.pcb
-                        self.state.cuts
+                        self.state.bites
+                        self.state.vcuts
                         self.state.cut_method
                         self.state.mb_diameter
                         self.state.mb_spacing
@@ -761,6 +799,7 @@ class UI(Application):
 
                             with HBox():
                                 Label("Cut Method")
+                                RadioButton("Auto", "auto", self.state("cut_method")).click(self.build)
                                 RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
                                 RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
 
