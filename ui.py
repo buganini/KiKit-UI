@@ -89,6 +89,10 @@ class PCB(StateObject):
             x1, y1, x2, y2 = self.x, self.y, self.x-self.height, self.y+self.width
         return x1, y1, x2, y2
 
+    @property
+    def nbbox(self):
+        return nbbox(*self.bbox)
+
 class UI(Application):
     def __init__(self):
         super().__init__()
@@ -104,7 +108,8 @@ class UI(Application):
         self.state.use_frame = True
         self.state.tight = True
         self.state.auto_tab = True
-        self.state.spacing = 3
+        self.state.spacing = 3.0
+        self.state.tab_width = 3.0
         self.state.cut_method = "mb"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
@@ -114,7 +119,7 @@ class UI(Application):
         self.state.frame_bottom = 5
         self.state.frame_left = 0
         self.state.frame_right = 0
-        self.state.mill_fillets = 1
+        self.state.mill_fillets = 1.0
 
         self.mousepos = None
         self.mouse_dragging = None
@@ -131,7 +136,7 @@ class UI(Application):
         x1, y1 = 0, 0
         x2, y2 = self.state.frame_width * mm, self.state.frame_height * mm
         for pcb in self.state.pcb:
-            bbox = nbbox(*pcb.bbox)
+            bbox = pcb.nbbox
             x1 = min(x1, bbox[0])
             y1 = min(y1, bbox[1])
             x2 = max(x2, bbox[2])
@@ -182,6 +187,7 @@ class UI(Application):
             return
 
         spacing = self.state.spacing
+        tab_width = self.state.tab_width
 
         pos_x = 0
         pos_y = 0
@@ -250,7 +256,7 @@ class UI(Application):
             x1, y1, x2, y2 = pcb.bbox
             panel.appendBoard(
                 pcb.file,
-                pcbnew.VECTOR2I(pos_x + x1, pos_y + y1),
+                pcbnew.VECTOR2I(round(pos_x + x1), round(pos_y + y1)),
                 origin=panelize.Origin.TopLeft,
                 tolerance=panelize.fromMm(1),
                 rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate * 90, pcbnew.DEGREES_T),
@@ -271,7 +277,7 @@ class UI(Application):
                 y2 = max(y2, pos_y + self.state.frame_height*mm)
 
             for pcb in pcbs[1:]:
-                bbox = nbbox(*pcb.bbox)
+                bbox = pcb.nbbox
                 x1 = min(x1, pos_x+bbox[0])
                 y1 = min(y1, pos_y+bbox[1])
                 x2 = max(x2, pos_x+bbox[2])
@@ -283,40 +289,83 @@ class UI(Application):
                 frameBody = frameBody.difference(s.exterior().buffer(spacing*mm, join_style="mitre"))
             panel.appendSubstrate(frameBody)
 
-        panel.buildPartitionLineFromBB(boundarySubstrates=boundarySubstrates)
-
+        tabs = []
         cuts = []
         if self.state.auto_tab:
+            bboxes = [pcb.nbbox for pcb in pcbs]
+            if self.state.use_frame:
+                bboxes.append((0, 0, self.state.frame_width*mm, self.state.frame_height*mm))
+            mx1, my1, mx2, my2 = zip(*bboxes)
+            mx1 = min(mx1)
+            my1 = min(my1)
+            mx2 = max(mx2)
+            my2 = max(my2)
             for pcb in pcbs:
-                x1, y1, x2, y2 = nbbox(*pcb.bbox)
-                try: # top
-                    tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm), (0,1), 3*mm)
-                    if len(tab) == 2: # tab, tabface
-                        panel.appendSubstrate(tab[0])
-                        cuts.append(tab[1])
-                except:
-                    traceback.print_exc()
-                try: # bottom
-                    tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm), (0,-1), 3*mm)
-                    if len(tab) == 2: # tab, tabface
-                        panel.appendSubstrate(tab[0])
-                        cuts.append(tab[1])
-                except:
-                    traceback.print_exc()
-                try: # left
-                    tab = panel.boardSubstrate.tab((pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2), (-1,0), 3*mm)
-                    if len(tab) == 2: # tab, tabface
-                        panel.appendSubstrate(tab[0])
-                        cuts.append(tab[1])
-                except:
-                    traceback.print_exc()
-                try: # right
-                    tab = panel.boardSubstrate.tab((pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2), (1,0), 3*mm)
-                    if len(tab) == 2: # tab, tabface
-                        panel.appendSubstrate(tab[0])
-                        cuts.append(tab[1])
-                except:
-                    traceback.print_exc()
+                x1, y1, x2, y2 = pcb.nbbox
+                if y1 != my1: # top
+                    try:
+                        tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm), (0,1), 1*mm)
+                        if len(tab) == 2: # tab, tabface
+                            tabs.append(tab[0])
+                            cuts.append(tab[1])
+                    except:
+                        pass
+                    try:
+                        tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm), (0,-1), 1*mm)
+                        if len(tab) == 2: # tab, tabface
+                            tabs.append(tab[0])
+                            cuts.append(tab[1])
+                    except:
+                        pass
+
+                if y2 != my2: # bottom
+                    try:
+                        tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm), (0,-1), 2*mm)
+                        if len(tab) == 2: # tab, tabface
+                            tabs.append(tab[0])
+                            cuts.append(tab[1])
+                    except:
+                        pass
+                    try:
+                        tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm), (0,1), 2*mm)
+                        if len(tab) == 2: # tab, tabface
+                            tabs.append(tab[0])
+                            cuts.append(tab[1])
+                    except:
+                        pass
+
+                if x1 != mx1: # left
+                    try:
+                        tab = panel.boardSubstrate.tab((pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2), (1,0), 3*mm)
+                        if len(tab) == 2: # tab, tabface
+                            tabs.append(tab[0])
+                            cuts.append(tab[1])
+                    except:
+                        pass
+                    try:
+                        tab = panel.boardSubstrate.tab((pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2), (-1,0), 3*mm)
+                        if len(tab) == 2: # tab, tabface
+                            tabs.append(tab[0])
+                            cuts.append(tab[1])
+                    except:
+                        pass
+                if x2 != mx2: # right
+                    try:
+                        tab = panel.boardSubstrate.tab((pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2), (-1,0), 4*mm)
+                        if len(tab) == 2: # tab, tabface
+                            tabs.append(tab[0])
+                            cuts.append(tab[1])
+                    except:
+                        pass
+                    try:
+                        tab = panel.boardSubstrate.tab((pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2), (1,0), 4*mm)
+                        if len(tab) == 2: # tab, tabface
+                            tabs.append(tab[0])
+                            cuts.append(tab[1])
+                    except:
+                        pass
+        for tab in tabs:
+            panel.appendSubstrate(tab)
 
         if not save:
             panel.addMillFillets(self.state.mill_fillets*mm)
@@ -336,14 +385,14 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: nbbox(*pcb.bbox)[1])
+        todo.sort(key=lambda pcb: pcb.nbbox[1])
         start = 0
         end = len(todo)
         if pcb:
             start = todo.index(pcb)
             end = start+1
         for i, pcb in enumerate(todo[start:end], start):
-            ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            ax1, ay1, ax2, ay2 = pcb.nbbox
             top = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
@@ -363,14 +412,14 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: -nbbox(*pcb.bbox)[3])
+        todo.sort(key=lambda pcb: -pcb.nbbox[3])
         start = 0
         end = len(todo)
         if pcb:
             start = todo.index(pcb)
             end = start+1
         for i, pcb in enumerate(todo[start:end], start):
-            ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            ax1, ay1, ax2, ay2 = pcb.nbbox
             bottom = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
@@ -390,14 +439,14 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: nbbox(*pcb.bbox)[0])
+        todo.sort(key=lambda pcb: pcb.nbbox[0])
         start = 0
         end = len(todo)
         if pcb:
             start = todo.index(pcb)
             end = start+1
         for i, pcb in enumerate(todo[start:end], start):
-            ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            ax1, ay1, ax2, ay2 = pcb.nbbox
             left = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
@@ -417,14 +466,14 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: -nbbox(*pcb.bbox)[2])
+        todo.sort(key=lambda pcb: -pcb.nbbox[2])
         start = 0
         end = len(todo)
         if pcb:
             start = todo.index(pcb)
             end = start+1
         for i, pcb in enumerate(todo[start:end], start):
-            ax1, ay1, ax2, ay2 = nbbox(*pcb.bbox)
+            ax1, ay1, ax2, ay2 = pcb.nbbox
             right = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
@@ -666,7 +715,9 @@ class UI(Application):
                             with HBox():
                                 Label("Spacing")
                                 TextField(self.state("spacing")).change(self.build)
-                                Label("Mill Fillets")
+                                Label("Tab Width")
+                                TextField(self.state("tab_width")).change(self.build)
+                                Label("Simulate Mill Fillets")
                                 TextField(self.state("mill_fillets")).change(self.build)
 
                             with HBox():
