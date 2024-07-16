@@ -87,6 +87,17 @@ class PCB(StateObject):
             self.x = right
         elif self.rotate % 4 == 3:
             self.x = right
+
+    @property
+    def rwidth(self):
+        x1, y1, x2, y2 = self.bbox
+        return abs(x2 - x1)
+
+    @property
+    def rheight(self):
+        x1, y1, x2, y2 = self.bbox
+        return abs(y2 - y1)
+
     @property
     def bbox(self):
         if self.rotate % 4 == 0:
@@ -261,7 +272,7 @@ class UI(Application):
     def _addPCB(self, pcb):
         if len(self.state.pcb) > 0:
             last = self.state.pcb[-1]
-            pcb.y = last.y + last.height + self.state.spacing * mm
+            pcb.y = last.y + last.rheight + self.state.spacing * mm
         else:
             pcb.y = (self.state.frame_top + self.state.spacing if self.state.frame_top > 0 else 0) * mm
         self.state.pcb.append(pcb)
