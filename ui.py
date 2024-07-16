@@ -897,20 +897,20 @@ class UI(Application):
                                 with HBox():
                                     Label("Frame Size")
                                     Label("Width")
-                                    TextField(self.state("frame_width"))
+                                    TextField(self.state("frame_width")).change(self.build)
                                     Label("Height")
-                                    TextField(self.state("frame_height"))
+                                    TextField(self.state("frame_height")).change(self.build)
 
                                 with HBox():
                                     Label("Frame Width")
                                     Label("Top")
-                                    TextField(self.state("frame_top"))
+                                    TextField(self.state("frame_top")).change(self.build)
                                     Label("Bottom")
-                                    TextField(self.state("frame_bottom"))
+                                    TextField(self.state("frame_bottom")).change(self.build)
                                     Label("Left")
-                                    TextField(self.state("frame_left"))
+                                    TextField(self.state("frame_left")).change(self.build)
                                     Label("Right")
-                                    TextField(self.state("frame_right"))
+                                    TextField(self.state("frame_right")).change(self.build)
 
                             with HBox():
                                 Label("Align")
