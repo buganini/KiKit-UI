@@ -7,7 +7,7 @@ from enum import Enum
 import traceback
 import os
 import sys
-sys.path.append("/Users/buganini/repo/buganini/PUI")
+# sys.path.append("/Users/buganini/repo/buganini/PUI")
 from PUI.PySide6 import *
 
 VC_EXTENT = 3
@@ -323,71 +323,74 @@ class UI(Application):
                 if col_bboxes and y1 != min([b[0] for b in col_bboxes]): # top
                     mid = (pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm)
                     dbg_pts.append(mid)
-                    try:
-                        tab = panel.boardSubstrate.tab(mid, (0,1), tab_width*mm)
-                        if len(tab) == 2: # tab, tabface
-                            tabs.append(tab[0])
-                            cuts.append(tab[1])
-                    except:
-                        pass
-                    try:
+                    try: # outward
                         tab = panel.boardSubstrate.tab(mid, (0,-1), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
+
+                            try: # inward
+                                tab = panel.boardSubstrate.tab(mid, (0,1), tab_width*mm)
+                                if len(tab) == 2: # tab, tabface
+                                    tabs.append(tab[0])
+                                    cuts.append(tab[1])
+                            except:
+                                pass
                     except:
                         pass
 
                 if col_bboxes and y2 != max([b[1] for b in col_bboxes]): # bottom
                     mid = (pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm)
                     dbg_pts.append(mid)
-                    try:
-                        tab = panel.boardSubstrate.tab(mid, (0,-1), tab_width*mm)
-                        if len(tab) == 2: # tab, tabface
-                            tabs.append(tab[0])
-                            cuts.append(tab[1])
-                    except:
-                        pass
-                    try:
+                    try: # outward
                         tab = panel.boardSubstrate.tab(mid, (0,1), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
+
+                            try: # inward
+                                tab = panel.boardSubstrate.tab(mid, (0,-1), tab_width*mm)
+                                if len(tab) == 2: # tab, tabface
+                                    tabs.append(tab[0])
+                                    cuts.append(tab[1])
+                            except:
+                                pass
                     except:
                         pass
 
                 if row_bboxes and x1 != min([b[0] for b in row_bboxes]): # left
                     mid = (pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2)
                     dbg_pts.append(mid)
-                    try:
-                        tab = panel.boardSubstrate.tab(mid, (1,0), tab_width*mm)
-                        if len(tab) == 2: # tab, tabface
-                            tabs.append(tab[0])
-                            cuts.append(tab[1])
-                    except:
-                        pass
-                    try:
+                    try: # outward
                         tab = panel.boardSubstrate.tab(mid, (-1,0), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
+
+                        try: # inward
+                            tab = panel.boardSubstrate.tab(mid, (1,0), tab_width*mm)
+                            if len(tab) == 2: # tab, tabface
+                                tabs.append(tab[0])
+                                cuts.append(tab[1])
+                        except:
+                            pass
                     except:
                         pass
                 if row_bboxes and x2 != max([b[1] for b in row_bboxes]): # right
                     mid = (pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2)
                     dbg_pts.append(mid)
-                    try:
-                        tab = panel.boardSubstrate.tab(mid, (-1,0), tab_width*mm)
-                        if len(tab) == 2: # tab, tabface
-                            tabs.append(tab[0])
-                            cuts.append(tab[1])
-                    except:
-                        pass
-                    try:
+                    try: # outward
                         tab = panel.boardSubstrate.tab(mid, (1,0), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
+                            try: # inward
+                                tab = panel.boardSubstrate.tab(mid, (-1,0), tab_width*mm)
+                                if len(tab) == 2: # tab, tabface
+                                    tabs.append(tab[0])
+                                    cuts.append(tab[1])
+                            except:
+                                pass
                     except:
                         pass
         for tab in tabs:
