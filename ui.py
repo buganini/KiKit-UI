@@ -204,7 +204,7 @@ class UI(Application):
         self.state.cut_method = "auto"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
-        self.state.vc_layer = "Edge.Cuts"
+        self.state.vc_layer = "Cmts.User"
         self.state.frame_width = 100
         self.state.frame_height = 100
         self.state.frame_top = 5
@@ -299,7 +299,10 @@ class UI(Application):
             pos_y = pcbs[0].pos_y
 
         panel = panelize.Panel(self.state.output)
-        panel.vCutLayer = {"Edge.Cuts": Layer.Edge_Cuts}.get(self.state.vc_layer, Layer.Cmts_User)
+        panel.vCutLayer = {
+            "Edge.Cuts": Layer.Edge_Cuts,
+            "User.1": Layer.User_1,
+        }.get(self.state.vc_layer, Layer.Cmts_User)
 
         boundarySubstrates = []
         if self.state.use_frame and not self.state.tight:
@@ -917,7 +920,7 @@ class UI(Application):
                                 # RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
                                 Label("V-Cut Layer")
                                 with ComboBox(editable=False, text_model=self.state("vc_layer")):
-                                    ComboBoxItem("Edge.Cuts")
+                                    ComboBoxItem("User.1")
                                     ComboBoxItem("Cmts.User")
 
                                 Spacer()
