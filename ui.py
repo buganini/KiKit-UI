@@ -1,5 +1,6 @@
 #!/usr/bin/env /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
 from kikit import panelize, substrate
+from kikit.defs import Layer
 from kikit.units import mm
 from kikit.common import *
 from kikit.substrate import NoIntersectionError, TabFilletError, closestIntersectionPoint, biteBoundary
@@ -203,6 +204,7 @@ class UI(Application):
         self.state.cut_method = "auto"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
+        self.state.vc_layer = "Edge.Cuts"
         self.state.frame_width = 100
         self.state.frame_height = 100
         self.state.frame_top = 5
@@ -297,6 +299,7 @@ class UI(Application):
             pos_y = pcbs[0].pos_y
 
         panel = panelize.Panel(self.state.output)
+        panel.vCutLayer = {"Edge.Cuts": Layer.Edge_Cuts}.get(self.state.vc_layer, Layer.Cmts_User)
 
         boundarySubstrates = []
         if self.state.use_frame and not self.state.tight:
@@ -911,7 +914,12 @@ class UI(Application):
                                 Label("Cut Method")
                                 RadioButton("Auto", "auto", self.state("cut_method")).click(self.build)
                                 RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
-                                RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                                # RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                                Label("V-Cut Layer")
+                                with ComboBox(editable=False, text_model=self.state("vc_layer")):
+                                    ComboBoxItem("Edge.Cuts")
+                                    ComboBoxItem("Cmts.User")
+
                                 Spacer()
 
                             if self.state.use_frame:
