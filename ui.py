@@ -199,7 +199,7 @@ class UI(Application):
         self.state.tight = True
         self.state.auto_tab = True
         self.state.spacing = 1.6
-        self.state.tab_width = 3.0
+        self.state.tab_width = 1.5
         self.state.max_tab_spacing = 50.0
         self.state.cut_method = "auto"
         self.state.mb_diameter = 0.6
@@ -800,7 +800,7 @@ class UI(Application):
         while i * mb_spacing * mm <= line.length:
             p = line.interpolate(i * mb_spacing * mm)
             x, y = self.toCanvas(p.x, p.y)
-            canvas.drawEllipse(x, y, mb_diameter/2*scale, mb_diameter/2*scale, stroke=0xFFFF00)
+            canvas.drawEllipse(x, y, mb_diameter*mm/2*scale, mb_diameter*mm/2*scale, stroke=0xFFFF00)
             i += 1
 
     def painter(self, canvas):
