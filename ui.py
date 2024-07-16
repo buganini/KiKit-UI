@@ -101,8 +101,10 @@ class PCB(StateObject):
     def nbbox(self):
         return nbbox(*self.bbox)
 
-# tab() in kikit stops at first hit substrate, but it may not be the closest one
-def autotab(boardSubstrate, origin, direction, width, partitionLine=None,
+# Modified from tab() in kikit:
+# 1. Don't stop at first hit substrate, it may not be the closest one
+# 2. Fix origin inside a hole
+def autotabs(boardSubstrate, origin, direction, width,
             maxHeight=pcbnew.FromMM(50), fillet=0):
     """
     Create a tab for the substrate. The tab starts at the specified origin
@@ -139,16 +141,30 @@ def autotab(boardSubstrate, origin, direction, width, partitionLine=None,
             splitPointB = closestIntersectionPoint(sideOriginB, direction,
                 boundary, maxHeight)
             tabFace = biteBoundary(boundary, splitPointB, splitPointA)
+            # There is nothing else to do, return the tab
+            tab = Polygon(list(tabFace.coords) + [sideOriginA, sideOriginB])
+            tabs.append(boardSubstrate._makeTabFillet(tab, tabFace, fillet))
 
-            if partitionLine is None:
+            for boundary in geom.interiors:
+                splitPointA = closestIntersectionPoint(sideOriginA, direction,
+                    boundary, maxHeight)
+                splitPointB = closestIntersectionPoint(sideOriginB, direction,
+                    boundary, maxHeight)
+                tabFace = biteBoundary(boundary, splitPointB, splitPointA)
                 # There is nothing else to do, return the tab
                 tab = Polygon(list(tabFace.coords) + [sideOriginA, sideOriginB])
                 tabs.append(boardSubstrate._makeTabFillet(tab, tabFace, fillet))
+
+
         except NoIntersectionError as e:
             continue
         except TabFilletError as e:
             continue
+    return tabs
 
+def autotab(boardSubstrate, origin, direction, width,
+            maxHeight=pcbnew.FromMM(50), fillet=0):
+    tabs = autotabs(boardSubstrate, origin, direction, width, maxHeight, fillet)
     if tabs:
         if direction[0]==0: # vertical
             if direction[1] < 0: # up
@@ -162,6 +178,7 @@ def autotab(boardSubstrate, origin, direction, width, partitionLine=None,
                 tabs.sort(key=lambda t: t[0].bounds[2])
         return tabs[0]
     return None
+
 class UI(Application):
     def __init__(self):
         super().__init__()
@@ -190,7 +207,7 @@ class UI(Application):
         self.state.frame_bottom = 5
         self.state.frame_left = 0
         self.state.frame_right = 0
-        self.state.mill_fillets = 1.0
+        self.state.mill_fillets = 0.5
 
         self.mousepos = None
         self.mouse_dragging = None
@@ -392,7 +409,6 @@ class UI(Application):
                         if tab: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
-
                             try: # inward
                                 tab = autotab(panel.boardSubstrate, mid, (0,1), tab_width*mm)
                                 if tab: # tab, tabface
@@ -401,7 +417,6 @@ class UI(Application):
                             except:
                                 pass
                     except:
-                        traceback.print_exc()
                         pass
 
                 if col_bboxes and y2 != max([b[1] for b in col_bboxes]): # bottom
@@ -412,7 +427,6 @@ class UI(Application):
                         if tab: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
-
                             try: # inward
                                 tab = autotab(panel.boardSubstrate, mid, (0,-1), tab_width*mm)
                                 if tab: # tab, tabface
@@ -431,14 +445,13 @@ class UI(Application):
                         if tab: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
-
-                        try: # inward
-                            tab = autotab(panel.boardSubstrate, mid, (1,0), tab_width*mm)
-                            if tab: # tab, tabface
-                                tabs.append(tab[0])
-                                cuts.append(tab[1])
-                        except:
-                            pass
+                            try: # inward
+                                tab = autotab(panel.boardSubstrate, mid, (1,0), tab_width*mm)
+                                if tab: # tab, tabface
+                                    tabs.append(tab[0])
+                                    cuts.append(tab[1])
+                            except:
+                                pass
                     except:
                         pass
                 if row_bboxes and x2 != max([b[1] for b in row_bboxes]): # right
@@ -728,7 +741,7 @@ class UI(Application):
         self.tool_args = arg
 
     def drawPCB(self, canvas, index, pcb, highlight):
-        fill = 0x113311 if highlight else 0x112211
+        fill = 0x225522 if highlight else 0x112211
         x1, y1, x2, y2 = pcb.bbox
         x1, y1 = self.toCanvas(x1, y1)
         x2, y2 = self.toCanvas(x2, y2)
