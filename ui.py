@@ -801,6 +801,11 @@ class UI(Application):
         offx, offy, scale = self.state.scale
         pcbs = self.state.pcb
 
+        if self.state.use_frame:
+            x1, y1 = self.toCanvas(0, 0)
+            x2, y2 = self.toCanvas(self.state.frame_width*mm, self.state.frame_height*mm)
+            canvas.drawRect(x1, y1, x2, y2, fill=0x222222)
+
         for i,pcb in enumerate(pcbs):
             if pcb is self.state.focus:
                 continue
@@ -822,11 +827,11 @@ class UI(Application):
             for polygon in geoms:
                 coords = polygon.exterior.coords
                 for i in range(1, len(coords)):
-                    self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
+                    self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
                 for interior in polygon.interiors:
                     coords = interior.coords
                     for i in range(1, len(coords)):
-                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x555555)
+                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
 
         if not self.mousehold or not self.mousemoved or not self.mouse_dragging:
             bites = self.state.bites
