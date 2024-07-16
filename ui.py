@@ -37,13 +37,6 @@ class PCB(StateObject):
         bbox = panelize.findBoardBoundingBox(board)
         self.ident = os.path.join(os.path.basename(os.path.dirname(boardfile)), os.path.basename(boardfile))
         self.pos_x, self.pos_y = bbox.GetPosition()
-        for e in collectEdges(board, Layer.Edge_Cuts, None):
-            print(e)
-            print(e.GetShapeStr())
-            print(dir(e))
-            print(dir(e.GetPolyShape()))
-            # print(e.GetPolyShape().OutlineCount())
-            break
         self.edges = []
         for e in collectEdges(board, Layer.Edge_Cuts, None):
             shapeStr = e.GetShapeStr()
