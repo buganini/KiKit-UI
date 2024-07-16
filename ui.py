@@ -198,7 +198,7 @@ class UI(Application):
         self.state.use_frame = True
         self.state.tight = True
         self.state.auto_tab = True
-        self.state.spacing = 3.0
+        self.state.spacing = 1.6
         self.state.tab_width = 3.0
         self.state.max_tab_spacing = 50.0
         self.state.cut_method = "auto"
