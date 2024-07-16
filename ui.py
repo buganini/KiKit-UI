@@ -804,7 +804,7 @@ class UI(Application):
         if self.state.use_frame:
             x1, y1 = self.toCanvas(0, 0)
             x2, y2 = self.toCanvas(self.state.frame_width*mm, self.state.frame_height*mm)
-            canvas.drawRect(x1, y1, x2, y2, fill=0x222222)
+            canvas.drawRect(x1, y1, x2, y2, fill=0x151515)
 
         for i,pcb in enumerate(pcbs):
             if pcb is self.state.focus:
