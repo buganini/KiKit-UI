@@ -109,6 +109,7 @@ class UI(Application):
         self.state.canvas_height = 800
         self.state.focus = None
         self.state.cuts = []
+        self.state.dbg_pts = []
         self.state.substrates = []
         self.state.use_frame = True
         self.state.tight = True
@@ -296,6 +297,7 @@ class UI(Application):
                 frameBody = frameBody.difference(s.exterior().buffer(spacing*mm, join_style="mitre"))
             panel.appendSubstrate(frameBody)
 
+        dbg_pts = []
         tabs = []
         cuts = []
         if self.state.auto_tab:
@@ -310,15 +312,17 @@ class UI(Application):
             for pcb in pcbs:
                 x1, y1, x2, y2 = pcb.nbbox
                 if y1 != my1: # top
+                    mid = (pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm)
+                    dbg_pts.append(mid)
                     try:
-                        tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm), (0,1), 1*mm)
+                        tab = panel.boardSubstrate.tab(mid, (0,1), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
                     except:
                         pass
                     try:
-                        tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm), (0,-1), 1*mm)
+                        tab = panel.boardSubstrate.tab(mid, (0,-1), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
@@ -326,15 +330,17 @@ class UI(Application):
                         pass
 
                 if y2 != my2: # bottom
+                    mid = (pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm)
+                    dbg_pts.append(mid)
                     try:
-                        tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm), (0,-1), 2*mm)
+                        tab = panel.boardSubstrate.tab(mid, (0,-1), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
                     except:
                         pass
                     try:
-                        tab = panel.boardSubstrate.tab((pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm), (0,1), 2*mm)
+                        tab = panel.boardSubstrate.tab(mid, (0,1), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
@@ -342,30 +348,34 @@ class UI(Application):
                         pass
 
                 if x1 != mx1: # left
+                    mid = (pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2)
+                    dbg_pts.append(mid)
                     try:
-                        tab = panel.boardSubstrate.tab((pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2), (1,0), 3*mm)
+                        tab = panel.boardSubstrate.tab(mid, (1,0), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
                     except:
                         pass
                     try:
-                        tab = panel.boardSubstrate.tab((pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2), (-1,0), 3*mm)
+                        tab = panel.boardSubstrate.tab(mid, (-1,0), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
                     except:
                         pass
                 if x2 != mx2: # right
+                    mid = (pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2)
+                    dbg_pts.append(mid)
                     try:
-                        tab = panel.boardSubstrate.tab((pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2), (-1,0), 4*mm)
+                        tab = panel.boardSubstrate.tab(mid, (-1,0), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
                     except:
                         pass
                     try:
-                        tab = panel.boardSubstrate.tab((pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2), (1,0), 4*mm)
+                        tab = panel.boardSubstrate.tab(mid, (1,0), tab_width*mm)
                         if len(tab) == 2: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
@@ -376,6 +386,7 @@ class UI(Application):
 
         if not save:
             panel.addMillFillets(self.state.mill_fillets*mm)
+            self.state.dbg_pts = dbg_pts
             self.state.cuts = cuts
             self.state.boardSubstrate = panel.boardSubstrate
 
@@ -689,6 +700,10 @@ class UI(Application):
                         x1, y1 = self.toCanvas(p1[0], p1[1])
                         x2, y2 = self.toCanvas(p2[0], p2[1])
                         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+
+            # for dbg_pts in self.state.dbg_pts:
+            #     x, y = self.toCanvas(dbg_pts[0], dbg_pts[1])
+            #     canvas.drawEllipse(x, y, 1, 1, stroke=0xFF0000)
 
             if self.tool == Tool.TAB:
                 x, y = self.mousepos[0], self.mousepos[1]
