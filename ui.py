@@ -37,6 +37,7 @@ class PCB(StateObject):
         bbox = panelize.findBoardBoundingBox(board)
         self.ident = os.path.join(os.path.basename(os.path.dirname(boardfile)), os.path.basename(boardfile))
         self.pos_x, self.pos_y = bbox.GetPosition()
+        self.edges = [LineString(e.GetCorners()) for e in collectEdges(board, Layer.Edge_Cuts, None)]
         self.width = bbox.GetWidth()
         self.height = bbox.GetHeight()
         self.x = 0
@@ -47,6 +48,12 @@ class PCB(StateObject):
         pcb = PCB(self.file)
         pcb.rotate = self.rotate
         return pcb
+
+    def contains(self, shape):
+        for e in self.edges:
+            if e.intersects(shape):
+                return True
+        return False
 
     def setTop(self, top):
         if self.rotate % 4 == 0:
@@ -433,7 +440,10 @@ class UI(Application):
                             tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*mm)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
-                                cuts.append(tab[1])
+                                for pcb in pcbs:
+                                    if pcb.contains(tabs[1]):
+                                        cuts.append(tab[1])
+                                        break
                                 try: # inward
                                     tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*mm)
                                     if tab: # tab, tabface
@@ -454,7 +464,10 @@ class UI(Application):
                             tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*mm)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
-                                cuts.append(tab[1])
+                                for pcb in pcbs:
+                                    if pcb.contains(tabs[1]):
+                                        cuts.append(tab[1])
+                                        break
                                 try: # inward
                                     tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*mm)
                                     if tab: # tab, tabface
@@ -474,7 +487,10 @@ class UI(Application):
                             tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*mm)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
-                                cuts.append(tab[1])
+                                for pcb in pcbs:
+                                    if pcb.contains(tabs[1]):
+                                        cuts.append(tab[1])
+                                        break
                                 try: # inward
                                     tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*mm)
                                     if tab: # tab, tabface
@@ -493,7 +509,10 @@ class UI(Application):
                             tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*mm)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
-                                cuts.append(tab[1])
+                                for pcb in pcbs:
+                                    if pcb.contains(tabs[1]):
+                                        cuts.append(tab[1])
+                                        break
                                 try: # inward
                                     tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*mm)
                                     if tab: # tab, tabface
