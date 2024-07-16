@@ -202,8 +202,8 @@ class UI(Application):
         self.state.tab_width = 3.0
         self.state.max_tab_spacing = 50.0
         self.state.cut_method = "auto"
-        self.state.mb_diameter = 0.5 * mm
-        self.state.mb_spacing = 0.75 * mm
+        self.state.mb_diameter = 0.6
+        self.state.mb_spacing = 0.3
         self.state.vc_layer = "Cmts.User"
         self.state.frame_width = 100
         self.state.frame_height = 100
@@ -504,7 +504,7 @@ class UI(Application):
         cut_method = self.state.cut_method
         if cut_method == "mb":
             bites.extend(cuts)
-            panel.makeMouseBites(cuts, diameter=self.state.mb_diameter, spacing=self.state.mb_spacing, offset=0 * mm, prolongation=0 * mm)
+            panel.makeMouseBites(cuts, diameter=self.state.mb_diameter * mm, spacing=self.state.mb_spacing * mm, offset=0 * mm, prolongation=0 * mm)
         elif cut_method == "vc":
             panel.makeVCuts(cuts)
             vcuts.extend(cuts)
@@ -516,7 +516,7 @@ class UI(Application):
                     for pcb in pcbs:
                         x1, y1, x2, y2 = pcb.nbbox
                         if pos_x+x1 < p1[0] and p1[0] < pos_x+x2:
-                            panel.makeMouseBites([line], diameter=self.state.mb_diameter, spacing=self.state.mb_spacing, offset=0 * mm, prolongation=0 * mm)
+                            panel.makeMouseBites([line], diameter=self.state.mb_diameter * mm, spacing=self.state.mb_spacing * mm, offset=0 * mm, prolongation=0 * mm)
                             bites.append(line)
                             break
                     else:
@@ -527,7 +527,7 @@ class UI(Application):
                     for pcb in pcbs:
                         x1, y1, x2, y2 = pcb.nbbox
                         if pos_y+y1 < p1[1] and p1[1] < pos_y+y2:
-                            panel.makeMouseBites([line], diameter=self.state.mb_diameter, spacing=self.state.mb_spacing, offset=0 * mm, prolongation=0 * mm)
+                            panel.makeMouseBites([line], diameter=self.state.mb_diameter * mm, spacing=self.state.mb_spacing * mm, offset=0 * mm, prolongation=0 * mm)
                             bites.append(line)
                             break
                     else:
@@ -797,8 +797,8 @@ class UI(Application):
         mb_diameter = self.state.mb_diameter
         mb_spacing = self.state.mb_spacing
         i = 0
-        while i * mb_spacing <= line.length:
-            p = line.interpolate(i*mb_spacing)
+        while i * mb_spacing * mm <= line.length:
+            p = line.interpolate(i * mb_spacing * mm)
             x, y = self.toCanvas(p.x, p.y)
             canvas.drawEllipse(x, y, mb_diameter/2*scale, mb_diameter/2*scale, stroke=0xFFFF00)
             i += 1
@@ -923,6 +923,13 @@ class UI(Application):
                                     ComboBoxItem("User.1")
                                     ComboBoxItem("Cmts.User")
 
+                                Spacer()
+                            with HBox():
+                                Label("Mousebites")
+                                Label("Spacing")
+                                TextField(self.state("mb_spacing")).change(self.build)
+                                Label("Diameter")
+                                TextField(self.state("mb_diameter")).change(self.build)
                                 Spacer()
 
                             if self.state.use_frame:
