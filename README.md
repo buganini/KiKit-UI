@@ -15,3 +15,7 @@ You probably need to update the python executable path at the first line of ui.p
 ![UI](screenshots/loose_frame_autotab_mousebites.png)
 ## 3D Output
 ![3D Output](screenshots/loose_frame_autotab_mousebites_output_3d.png)
+
+# ToDo
+* Manual tabbing
+* Arbitrary rotation
