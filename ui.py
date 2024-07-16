@@ -1,6 +1,9 @@
 #!/usr/bin/env /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
 from kikit import panelize, substrate
 from kikit.units import mm
+from kikit.common import *
+from kikit.substrate import NoIntersectionError, TabFilletError, closestIntersectionPoint, biteBoundary
+import numpy as np
 from shapely.geometry import Point, Polygon, MultiPolygon, LineString, GeometryCollection, box
 import pcbnew
 from enum import Enum
@@ -98,6 +101,67 @@ class PCB(StateObject):
     def nbbox(self):
         return nbbox(*self.bbox)
 
+# tab() in kikit stops at first hit substrate, but it may not be the closest one
+def autotab(boardSubstrate, origin, direction, width, partitionLine=None,
+            maxHeight=pcbnew.FromMM(50), fillet=0):
+    """
+    Create a tab for the substrate. The tab starts at the specified origin
+    (2D point) and tries to penetrate existing substrate in direction (a 2D
+    vector). The tab is constructed with given width. If the substrate is
+    not penetrated within maxHeight, exception is raised.
+
+    When partitionLine is specified, the tab is extended to the opposite
+    side - limited by the partition line. Note that if tab cannot span
+    towards the partition line, then the tab is not created - it returns a
+    tuple (None, None).
+
+    If a fillet is specified, it allows you to add fillet to the tab of
+    specified radius.
+
+    Returns a pair tab and cut outline. Add the tab it via union - batch
+    adding of geometry is more efficient.
+    """
+    boardSubstrate.orient()
+
+    if boardSubstrate.substrates.contains(Point(origin)) and not boardSubstrate.substrates.boundary.contains(Point(origin)):
+        raise TabError(origin, direction, ["Tab annotation is placed inside the board. It has to be on edge or outside the board."])
+
+    origin = np.array(origin)
+    direction = np.around(normalize(direction), 4)
+    tabs = []
+    for geom in listGeometries(boardSubstrate.substrates):
+        try:
+            sideOriginA = origin + makePerpendicular(direction) * width / 2
+            sideOriginB = origin - makePerpendicular(direction) * width / 2
+            boundary = geom.exterior
+            splitPointA = closestIntersectionPoint(sideOriginA, direction,
+                boundary, maxHeight)
+            splitPointB = closestIntersectionPoint(sideOriginB, direction,
+                boundary, maxHeight)
+            tabFace = biteBoundary(boundary, splitPointB, splitPointA)
+
+            if partitionLine is None:
+                # There is nothing else to do, return the tab
+                tab = Polygon(list(tabFace.coords) + [sideOriginA, sideOriginB])
+                tabs.append(boardSubstrate._makeTabFillet(tab, tabFace, fillet))
+        except NoIntersectionError as e:
+            continue
+        except TabFilletError as e:
+            continue
+
+    if tabs:
+        if direction[0]==0: # vertical
+            if direction[1] < 0: # up
+                tabs.sort(key=lambda t: -t[0].bounds[1])
+            elif direction[1] > 0: # down
+                tabs.sort(key=lambda t: t[0].bounds[3])
+        elif direction[1]==0: # horizontal
+            if direction[0] < 0: # left
+                tabs.sort(key=lambda t: -t[0].bounds[0])
+            elif direction[0] > 0: # right
+                tabs.sort(key=lambda t: t[0].bounds[2])
+        return tabs[0]
+    return None
 class UI(Application):
     def __init__(self):
         super().__init__()
@@ -324,33 +388,34 @@ class UI(Application):
                     mid = (pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm)
                     dbg_pts.append(mid)
                     try: # outward
-                        tab = panel.boardSubstrate.tab(mid, (0,-1), tab_width*mm)
-                        if len(tab) == 2: # tab, tabface
+                        tab = autotab(panel.boardSubstrate, mid, (0,-1), tab_width*mm)
+                        if tab: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
 
                             try: # inward
-                                tab = panel.boardSubstrate.tab(mid, (0,1), tab_width*mm)
-                                if len(tab) == 2: # tab, tabface
+                                tab = autotab(panel.boardSubstrate, mid, (0,1), tab_width*mm)
+                                if tab: # tab, tabface
                                     tabs.append(tab[0])
                                     cuts.append(tab[1])
                             except:
                                 pass
                     except:
+                        traceback.print_exc()
                         pass
 
                 if col_bboxes and y2 != max([b[1] for b in col_bboxes]): # bottom
                     mid = (pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm)
                     dbg_pts.append(mid)
                     try: # outward
-                        tab = panel.boardSubstrate.tab(mid, (0,1), tab_width*mm)
-                        if len(tab) == 2: # tab, tabface
+                        tab = autotab(panel.boardSubstrate, mid, (0,1), tab_width*mm)
+                        if tab: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
 
                             try: # inward
-                                tab = panel.boardSubstrate.tab(mid, (0,-1), tab_width*mm)
-                                if len(tab) == 2: # tab, tabface
+                                tab = autotab(panel.boardSubstrate, mid, (0,-1), tab_width*mm)
+                                if tab: # tab, tabface
                                     tabs.append(tab[0])
                                     cuts.append(tab[1])
                             except:
@@ -362,14 +427,14 @@ class UI(Application):
                     mid = (pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2)
                     dbg_pts.append(mid)
                     try: # outward
-                        tab = panel.boardSubstrate.tab(mid, (-1,0), tab_width*mm)
-                        if len(tab) == 2: # tab, tabface
+                        tab = autotab(panel.boardSubstrate, mid, (-1,0), tab_width*mm)
+                        if tab: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
 
                         try: # inward
-                            tab = panel.boardSubstrate.tab(mid, (1,0), tab_width*mm)
-                            if len(tab) == 2: # tab, tabface
+                            tab = autotab(panel.boardSubstrate, mid, (1,0), tab_width*mm)
+                            if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 cuts.append(tab[1])
                         except:
@@ -380,13 +445,13 @@ class UI(Application):
                     mid = (pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2)
                     dbg_pts.append(mid)
                     try: # outward
-                        tab = panel.boardSubstrate.tab(mid, (1,0), tab_width*mm)
-                        if len(tab) == 2: # tab, tabface
+                        tab = autotab(panel.boardSubstrate, mid, (1,0), tab_width*mm)
+                        if tab: # tab, tabface
                             tabs.append(tab[0])
                             cuts.append(tab[1])
                             try: # inward
-                                tab = panel.boardSubstrate.tab(mid, (-1,0), tab_width*mm)
-                                if len(tab) == 2: # tab, tabface
+                                tab = autotab(panel.boardSubstrate, mid, (-1,0), tab_width*mm)
+                                if tab: # tab, tabface
                                     tabs.append(tab[0])
                                     cuts.append(tab[1])
                             except:
