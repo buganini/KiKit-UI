@@ -15,6 +15,11 @@ VC_EXTENT = 3
 class Tool(Enum):
     NONE = 0
     TAB = 1
+class Direction(Enum):
+    Up = 0
+    Down = 1
+    Left = 2
+    Right = 3
 
 def nbbox(x1, y1, x2, y2):
     return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
@@ -124,6 +129,8 @@ class UI(Application):
         self.mousepos = None
         self.mouse_dragging = None
         self.mousehold = False
+        self.tool = Tool.NONE
+        self.tool_args = None
 
         inputs = sys.argv[1:]
         for boardfile in inputs:
@@ -514,43 +521,51 @@ class UI(Application):
         self.mousehold = True
         self.mousemoved = 0
 
-        pcbs = self.state.pcb
-        x, y = self.fromCanvas(e.x, e.y)
-        p = Point(x, y)
-
-        self.mouse_dragging = None
-        if self.state.focus:
-            x1, y1, x2, y2 = self.state.focus.bbox
-            if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
-                self.mouse_dragging = self.state.focus
-        # if self.mouse_dragging is None:
-        #     for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
-        #         x1, y1, x2, y2 = pcb.bbox
-        #         if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
-        #             self.mouse_dragging = pcb
-        #             break
-
-    def mouseup(self, e):
-        self.mousehold = False
-        if self.mousemoved < 5:
-            found = False
+        if self.tool == Tool.TAB:
+            pass
+        else:
             pcbs = self.state.pcb
             x, y = self.fromCanvas(e.x, e.y)
             p = Point(x, y)
-            for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
-                x1, y1, x2, y2 = pcb.bbox
+
+            self.mouse_dragging = None
+            if self.state.focus:
+                x1, y1, x2, y2 = self.state.focus.bbox
                 if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
-                    found = True
-                    if self.state.focus is pcb:
-                        continue
-                    else:
-                        self.state.focus = pcb
-            if not found:
-                self.state.focus = None
-        self.build()
+                    self.mouse_dragging = self.state.focus
+            # if self.mouse_dragging is None:
+            #     for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
+            #         x1, y1, x2, y2 = pcb.bbox
+            #         if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+            #             self.mouse_dragging = pcb
+            #             break
+
+    def mouseup(self, e):
+        self.mousehold = False
+        if self.tool == Tool.TAB:
+            pass
+        else:
+            if self.mousemoved < 5:
+                found = False
+                pcbs = self.state.pcb
+                x, y = self.fromCanvas(e.x, e.y)
+                p = Point(x, y)
+                for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
+                    x1, y1, x2, y2 = pcb.bbox
+                    if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+                        found = True
+                        if self.state.focus is pcb:
+                            continue
+                        else:
+                            self.state.focus = pcb
+                if not found:
+                    self.state.focus = None
+            self.build()
 
     def mousemove(self, e):
-        if self.mousehold:
+        if self.tool == Tool.TAB:
+            self.state()
+        elif self.mousehold:
             pdx = e.x - self.mousepos[0]
             pdy = e.y - self.mousepos[1]
             self.mousemoved += (pdx**2 + pdy**2)**0.5
@@ -587,6 +602,10 @@ class UI(Application):
             elif event.text == "R":
                 self.state.focus.rotate -= 1
                 self.build()
+
+    def add_tab(self, arg):
+        self.tool = Tool.TAB
+        self.tool_args = arg
 
     def drawPCB(self, canvas, index, pcb, highlight):
         fill = 0x113311 if highlight else 0x112211
@@ -670,6 +689,11 @@ class UI(Application):
                         x1, y1 = self.toCanvas(p1[0], p1[1])
                         x2, y2 = self.toCanvas(p2[0], p2[1])
                         canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+
+            if self.tool == Tool.TAB:
+                x, y = self.mousepos[0], self.mousepos[1]
+                canvas.drawLine(x-10, y, x+10, y, color=0xFF0000)
+                canvas.drawLine(x, y-10, x, y+10, color=0xFF0000)
 
     def content(self):
         with Window(size=(1300, 768)).keypress(self.keypress):
@@ -758,19 +782,33 @@ class UI(Application):
                             if self.state.focus:
                                 Label("Selected PCB")
 
-                                with HBox():
-                                    Label("Rotate")
-                                    Button("↺ (r)").click(self.rotateCCW)
-                                    Button("↻ (R)").click(self.rotateCW)
-                                    Spacer()
+                                with Grid():
+                                    r = 0
 
-                                with HBox():
-                                    Label("Align")
-                                    Button("⤒").click(self.snap_top, pcb=self.state.focus)
-                                    Button("⤓").click(self.snap_bottom, pcb=self.state.focus)
-                                    Button("⇤").click(self.snap_left, pcb=self.state.focus)
-                                    Button("⇥").click(self.snap_right, pcb=self.state.focus)
-                                    Spacer()
+                                    Label("Rotate").grid(row=r, column=0)
+                                    with HBox().grid(row=r, column=1):
+                                        Button("↺ (r)").click(self.rotateCCW)
+                                        Button("↻ (R)").click(self.rotateCW)
+                                        Spacer()
+                                    r += 1
+
+                                    Label("Align").grid(row=r, column=0)
+                                    with HBox().grid(row=r, column=1):
+                                        Button("⤒").click(self.snap_top, pcb=self.state.focus)
+                                        Button("⤓").click(self.snap_bottom, pcb=self.state.focus)
+                                        Button("⇤").click(self.snap_left, pcb=self.state.focus)
+                                        Button("⇥").click(self.snap_right, pcb=self.state.focus)
+                                        Spacer()
+                                    r += 1
+
+                                    # Label("Add Tab").grid(row=r, column=0)
+                                    # with HBox().grid(row=r, column=1):
+                                    #     Button("↥").click(self.add_tab, Direction.Up)
+                                    #     Button("↧").click(self.add_tab, Direction.Down)
+                                    #     Button("↤").click(self.add_tab, Direction.Left)
+                                    #     Button("↦").click(self.add_tab, Direction.Right)
+                                    #     Spacer()
+                                    # r += 1
 
                             Spacer()
 
