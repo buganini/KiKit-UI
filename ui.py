@@ -6,6 +6,7 @@ from kikit.substrate import NoIntersectionError, TabFilletError, closestIntersec
 import numpy as np
 from shapely.geometry import Point, Polygon, MultiPolygon, LineString, GeometryCollection, box
 import pcbnew
+import math
 from enum import Enum
 import traceback
 import os
@@ -198,6 +199,7 @@ class UI(Application):
         self.state.auto_tab = True
         self.state.spacing = 3.0
         self.state.tab_width = 3.0
+        self.state.max_tab_spacing = 50.0
         self.state.cut_method = "auto"
         self.state.mb_diameter = 0.5 * mm
         self.state.mb_spacing = 0.75 * mm
@@ -278,6 +280,7 @@ class UI(Application):
 
         spacing = self.state.spacing
         tab_width = self.state.tab_width
+        max_tab_spacing = self.state.max_tab_spacing
 
         pos_x = 0
         pos_y = 0
@@ -382,7 +385,7 @@ class UI(Application):
         dbg_pts = []
         tabs = []
         cuts = []
-        if self.state.auto_tab:
+        if self.state.auto_tab and max_tab_spacing > 0:
             for pcb in pcbs:
                 bboxes = [p.nbbox for p in pcbs if p is not pcb]
                 if self.state.use_frame:
@@ -401,76 +404,87 @@ class UI(Application):
                 x1, y1, x2, y2 = pcb.nbbox
                 row_bboxes = [(b[0],b[2]) for b in bboxes if LineString([(0, b[1]), (0, b[3])]).intersects(LineString([(0, y1), (0, y2)]))]
                 col_bboxes = [(b[1],b[3]) for b in bboxes if LineString([(b[0], 0), (b[2], 0)]).intersects(LineString([(x1, 0), (x2, 0)]))]
-                if col_bboxes and y1 != min([b[0] for b in col_bboxes]): # top
-                    mid = (pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm)
-                    dbg_pts.append(mid)
-                    try: # outward
-                        tab = autotab(panel.boardSubstrate, mid, (0,-1), tab_width*mm)
-                        if tab: # tab, tabface
-                            tabs.append(tab[0])
-                            cuts.append(tab[1])
-                            try: # inward
-                                tab = autotab(panel.boardSubstrate, mid, (0,1), tab_width*mm)
-                                if tab: # tab, tabface
-                                    tabs.append(tab[0])
-                                    cuts.append(tab[1])
-                            except:
-                                pass
-                    except:
-                        pass
 
-                if col_bboxes and y2 != max([b[1] for b in col_bboxes]): # bottom
-                    mid = (pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm)
-                    dbg_pts.append(mid)
-                    try: # outward
-                        tab = autotab(panel.boardSubstrate, mid, (0,1), tab_width*mm)
-                        if tab: # tab, tabface
-                            tabs.append(tab[0])
-                            cuts.append(tab[1])
-                            try: # inward
-                                tab = autotab(panel.boardSubstrate, mid, (0,-1), tab_width*mm)
-                                if tab: # tab, tabface
-                                    tabs.append(tab[0])
-                                    cuts.append(tab[1])
-                            except:
-                                pass
-                    except:
-                        pass
+                # top
+                if col_bboxes and y1 != min([b[0] for b in col_bboxes]):
+                    n = math.ceil((x2-x1) / (max_tab_spacing*mm))+1
+                    for i in range(1,n):
+                        p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y1 - spacing/2*mm)
+                        dbg_pts.append(p)
+                        try: # outward
+                            tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*mm)
+                            if tab: # tab, tabface
+                                tabs.append(tab[0])
+                                cuts.append(tab[1])
+                                try: # inward
+                                    tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*mm)
+                                    if tab: # tab, tabface
+                                        tabs.append(tab[0])
+                                        cuts.append(tab[1])
+                                except:
+                                    pass
+                        except:
+                            pass
+
+                # bottom
+                if col_bboxes and y2 != max([b[1] for b in col_bboxes]):
+                    n = math.ceil((x2-x1) / (max_tab_spacing*mm))+1
+                    for i in range(1,n):
+                        p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y2 + spacing/2*mm)
+                        dbg_pts.append(p)
+                        try: # outward
+                            tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*mm)
+                            if tab: # tab, tabface
+                                tabs.append(tab[0])
+                                cuts.append(tab[1])
+                                try: # inward
+                                    tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*mm)
+                                    if tab: # tab, tabface
+                                        tabs.append(tab[0])
+                                        cuts.append(tab[1])
+                                except:
+                                    pass
+                        except:
+                            pass
 
                 if row_bboxes and x1 != min([b[0] for b in row_bboxes]): # left
-                    mid = (pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2)
-                    dbg_pts.append(mid)
-                    try: # outward
-                        tab = autotab(panel.boardSubstrate, mid, (-1,0), tab_width*mm)
-                        if tab: # tab, tabface
-                            tabs.append(tab[0])
-                            cuts.append(tab[1])
-                            try: # inward
-                                tab = autotab(panel.boardSubstrate, mid, (1,0), tab_width*mm)
-                                if tab: # tab, tabface
-                                    tabs.append(tab[0])
-                                    cuts.append(tab[1])
-                            except:
-                                pass
-                    except:
-                        pass
+                    n = math.ceil((y2-y1) / (max_tab_spacing*mm))+1
+                    for i in range(1,n):
+                        p = (pos_x + x1 - spacing/2*mm , pos_y + y1 + (y2-y1)*i/n)
+                        dbg_pts.append(p)
+                        try: # outward
+                            tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*mm)
+                            if tab: # tab, tabface
+                                tabs.append(tab[0])
+                                cuts.append(tab[1])
+                                try: # inward
+                                    tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*mm)
+                                    if tab: # tab, tabface
+                                        tabs.append(tab[0])
+                                        cuts.append(tab[1])
+                                except:
+                                    pass
+                        except:
+                            pass
                 if row_bboxes and x2 != max([b[1] for b in row_bboxes]): # right
-                    mid = (pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2)
-                    dbg_pts.append(mid)
-                    try: # outward
-                        tab = autotab(panel.boardSubstrate, mid, (1,0), tab_width*mm)
-                        if tab: # tab, tabface
-                            tabs.append(tab[0])
-                            cuts.append(tab[1])
-                            try: # inward
-                                tab = autotab(panel.boardSubstrate, mid, (-1,0), tab_width*mm)
-                                if tab: # tab, tabface
-                                    tabs.append(tab[0])
-                                    cuts.append(tab[1])
-                            except:
-                                pass
-                    except:
-                        pass
+                    n = math.ceil((y2-y1) / (max_tab_spacing*mm))+1
+                    for i in range(1,n):
+                        p = (pos_x + x2 + spacing/2*mm , pos_y + y1 + (y2-y1)*i/n)
+                        dbg_pts.append(p)
+                        try: # outward
+                            tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*mm)
+                            if tab: # tab, tabface
+                                tabs.append(tab[0])
+                                cuts.append(tab[1])
+                                try: # inward
+                                    tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*mm)
+                                    if tab: # tab, tabface
+                                        tabs.append(tab[0])
+                                        cuts.append(tab[1])
+                                except:
+                                    pass
+                        except:
+                            pass
         for tab in tabs:
             panel.appendSubstrate(tab)
 
@@ -877,6 +891,8 @@ class UI(Application):
                                 Checkbox("Tight", self.state("tight")).click(self.build)
                                 Checkbox("Auto Tab", self.state("auto_tab")).click(self.build)
                                 Spacer()
+                                Label("Max Tab Spacing")
+                                TextField(self.state("max_tab_spacing")).layout(width=50).change(self.build)
 
                             with HBox():
                                 Label("Spacing")
