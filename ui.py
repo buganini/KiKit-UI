@@ -199,11 +199,12 @@ class UI(Application):
         self.state.tight = True
         self.state.auto_tab = True
         self.state.spacing = 1.6
-        self.state.tab_width = 1.5
         self.state.max_tab_spacing = 50.0
         self.state.cut_method = "auto"
         self.state.mb_diameter = 0.6
         self.state.mb_spacing = 0.3
+        mb_count = 5
+        self.state.tab_width = math.ceil((self.state.mb_diameter * mb_count + self.state.mb_spacing * (mb_count-1)))
         self.state.vc_layer = "Cmts.User"
         self.state.frame_width = 100
         self.state.frame_height = 100
@@ -797,8 +798,8 @@ class UI(Application):
         mb_diameter = self.state.mb_diameter
         mb_spacing = self.state.mb_spacing
         i = 0
-        while i * mb_spacing * mm <= line.length:
-            p = line.interpolate(i * mb_spacing * mm)
+        while i * (mb_spacing + mb_diameter) * mm <= line.length:
+            p = line.interpolate(i * (mb_spacing + mb_diameter) * mm)
             x, y = self.toCanvas(p.x, p.y)
             canvas.drawEllipse(x, y, mb_diameter*mm/2*scale, mb_diameter*mm/2*scale, stroke=0xFFFF00)
             i += 1
