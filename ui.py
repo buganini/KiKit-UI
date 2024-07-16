@@ -302,17 +302,25 @@ class UI(Application):
         tabs = []
         cuts = []
         if self.state.auto_tab:
-            bboxes = [pcb.nbbox for pcb in pcbs]
-            if self.state.use_frame:
-                bboxes.append((0, 0, self.state.frame_width*mm, self.state.frame_height*mm))
-            mx1, my1, mx2, my2 = zip(*bboxes)
-            mx1 = min(mx1)
-            my1 = min(my1)
-            mx2 = max(mx2)
-            my2 = max(my2)
             for pcb in pcbs:
+                bboxes = [p.nbbox for p in pcbs if p is not pcb]
+                if self.state.use_frame:
+                    if self.state.tight:
+                        bboxes.append((0, 0, self.state.frame_width*mm, self.state.frame_height*mm))
+                    else:
+                        if self.state.frame_top > 0:
+                            bboxes.append((0, 0, self.state.frame_width*mm, self.state.frame_top*mm))
+                        if self.state.frame_bottom > 0:
+                            bboxes.append((0, self.state.frame_height*mm-self.state.frame_bottom*mm, self.state.frame_width*mm, self.state.frame_height*mm))
+                        if self.state.frame_left > 0:
+                            bboxes.append((0, 0, self.state.frame_left*mm, self.state.frame_height*mm))
+                        if self.state.frame_right > 0:
+                            bboxes.append((self.state.frame_width*mm-self.state.frame_right*mm, 0, self.state.frame_width*mm, self.state.frame_height*mm))
+
                 x1, y1, x2, y2 = pcb.nbbox
-                if y1 != my1: # top
+                row_bboxes = [(b[0],b[2]) for b in bboxes if LineString([(0, b[1]), (0, b[3])]).intersects(LineString([(0, y1), (0, y2)]))]
+                col_bboxes = [(b[1],b[3]) for b in bboxes if LineString([(b[0], 0), (b[2], 0)]).intersects(LineString([(x1, 0), (x2, 0)]))]
+                if col_bboxes and y1 != min([b[0] for b in col_bboxes]): # top
                     mid = (pos_x + (x1 + x2)/2, pos_y + y1 - spacing/2*mm)
                     dbg_pts.append(mid)
                     try:
@@ -330,7 +338,7 @@ class UI(Application):
                     except:
                         pass
 
-                if y2 != my2: # bottom
+                if col_bboxes and y2 != max([b[1] for b in col_bboxes]): # bottom
                     mid = (pos_x + (x1 + x2)/2, pos_y + y2 + spacing/2*mm)
                     dbg_pts.append(mid)
                     try:
@@ -348,7 +356,7 @@ class UI(Application):
                     except:
                         pass
 
-                if x1 != mx1: # left
+                if row_bboxes and x1 != min([b[0] for b in row_bboxes]): # left
                     mid = (pos_x + x1 - spacing/2*mm , pos_y + (y1 + y2)/2)
                     dbg_pts.append(mid)
                     try:
@@ -365,7 +373,7 @@ class UI(Application):
                             cuts.append(tab[1])
                     except:
                         pass
-                if x2 != mx2: # right
+                if row_bboxes and x2 != max([b[1] for b in row_bboxes]): # right
                     mid = (pos_x + x2 + spacing/2*mm , pos_y + (y1 + y2)/2)
                     dbg_pts.append(mid)
                     try:
@@ -802,6 +810,7 @@ class UI(Application):
                                 RadioButton("Auto", "auto", self.state("cut_method")).click(self.build)
                                 RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
                                 RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                                Spacer()
 
                             if self.state.use_frame:
                                 with HBox():
