@@ -1,7 +1,7 @@
 #!/usr/bin/env /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
 from kikit import panelize, substrate
 from kikit.defs import Layer
-from kikit.units import mm
+from kikit.units import mm, mil
 from kikit.common import *
 from kikit.substrate import NoIntersectionError, TabFilletError, closestIntersectionPoint, biteBoundary
 import numpy as np
@@ -252,6 +252,9 @@ def autotab(boardSubstrate, origin, direction, width,
 class UI(Application):
     def __init__(self):
         super().__init__()
+
+        self.unit = mm
+
         self.state = State()
         self.state.debug = False
         self.state.show_mb = True
@@ -302,7 +305,7 @@ class UI(Application):
 
     def autoScale(self):
         x1, y1 = 0, 0
-        x2, y2 = self.state.frame_width * mm, self.state.frame_height * mm
+        x2, y2 = self.state.frame_width * self.unit, self.state.frame_height * self.unit
         for pcb in self.state.pcb:
             bbox = pcb.nbbox
             x1 = min(x1, bbox[0])
@@ -334,9 +337,9 @@ class UI(Application):
     def _addPCB(self, pcb):
         if len(self.state.pcb) > 0:
             last = self.state.pcb[-1]
-            pcb.y = last.y + last.rheight + self.state.spacing * mm
+            pcb.y = last.y + last.rheight + self.state.spacing * self.unit
         else:
-            pcb.y = (self.state.frame_top + self.state.spacing if self.state.frame_top > 0 else 0) * mm
+            pcb.y = (self.state.frame_top + self.state.spacing if self.state.frame_top > 0 else 0) * self.unit
         self.state.pcb.append(pcb)
         self.autoScale()
         self.build()
@@ -385,9 +388,9 @@ class UI(Application):
             if self.state.frame_top > 0:
                 polygon = Polygon([
                     [pos_x, pos_y],
-                    [pos_x+self.state.frame_width*mm, pos_y],
-                    [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_top*mm],
-                    [pos_x, pos_y+self.state.frame_top*mm],
+                    [pos_x+self.state.frame_width*self.unit, pos_y],
+                    [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_top*self.unit],
+                    [pos_x, pos_y+self.state.frame_top*self.unit],
                 ])
                 panel.appendSubstrate(polygon)
                 sub = substrate.Substrate([])
@@ -395,10 +398,10 @@ class UI(Application):
                 boundarySubstrates.append(sub)
             if self.state.frame_bottom > 0:
                 polygon = Polygon([
-                    [pos_x, pos_y+self.state.frame_height*mm],
-                    [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm],
-                    [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm-self.state.frame_bottom*mm],
-                    [pos_x, pos_y+self.state.frame_height*mm-self.state.frame_bottom*mm],
+                    [pos_x, pos_y+self.state.frame_height*self.unit],
+                    [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit],
+                    [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
+                    [pos_x, pos_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
                 ])
                 panel.appendSubstrate(polygon)
                 sub = substrate.Substrate([])
@@ -407,9 +410,9 @@ class UI(Application):
             if self.state.frame_left > 0:
                 polygon = Polygon([
                     [pos_x, pos_y],
-                    [pos_x, pos_y+self.state.frame_height*mm],
-                    [pos_x+self.state.frame_left*mm, pos_y+self.state.frame_height*mm],
-                    [pos_x+self.state.frame_left*mm, pos_y],
+                    [pos_x, pos_y+self.state.frame_height*self.unit],
+                    [pos_x+self.state.frame_left*self.unit, pos_y+self.state.frame_height*self.unit],
+                    [pos_x+self.state.frame_left*self.unit, pos_y],
                 ])
                 panel.appendSubstrate(polygon)
                 sub = substrate.Substrate([])
@@ -417,10 +420,10 @@ class UI(Application):
                 boundarySubstrates.append(sub)
             if self.state.frame_right > 0:
                 polygon = Polygon([
-                    [pos_x+self.state.frame_width*mm, pos_y],
-                    [pos_x+self.state.frame_width*mm, pos_y+self.state.frame_height*mm],
-                    [pos_x+self.state.frame_width*mm-self.state.frame_right*mm, pos_y+self.state.frame_height*mm],
-                    [pos_x+self.state.frame_width*mm-self.state.frame_right*mm, pos_y],
+                    [pos_x+self.state.frame_width*self.unit, pos_y],
+                    [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit],
+                    [pos_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, pos_y+self.state.frame_height*self.unit],
+                    [pos_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, pos_y],
                 ])
                 panel.appendSubstrate(polygon)
                 sub = substrate.Substrate([])
@@ -448,8 +451,8 @@ class UI(Application):
             if self.state.use_frame:
                 x1 = min(x1, pos_x)
                 y1 = min(y1, pos_y)
-                x2 = max(x2, pos_x + self.state.frame_width*mm)
-                y2 = max(y2, pos_y + self.state.frame_height*mm)
+                x2 = max(x2, pos_x + self.state.frame_width*self.unit)
+                y2 = max(y2, pos_y + self.state.frame_height*self.unit)
 
             for pcb in pcbs[1:]:
                 bbox = pcb.nbbox
@@ -461,7 +464,7 @@ class UI(Application):
             # board hole
             frameBody = box(x1, y1, x2, y2)
             for s in panel.substrates:
-                frameBody = frameBody.difference(s.exterior().buffer(spacing*mm, join_style="mitre"))
+                frameBody = frameBody.difference(s.exterior().buffer(spacing*self.unit, join_style="mitre"))
             panel.appendSubstrate(frameBody)
 
         dbg_points = []
@@ -474,16 +477,16 @@ class UI(Application):
                 bboxes = [p.nbbox for p in pcbs if p is not pcb]
                 if self.state.use_frame:
                     if self.state.tight:
-                        bboxes.append((0, 0, self.state.frame_width*mm, self.state.frame_height*mm))
+                        bboxes.append((0, 0, self.state.frame_width*self.unit, self.state.frame_height*self.unit))
                     else:
                         if self.state.frame_top > 0:
-                            bboxes.append((0, 0, self.state.frame_width*mm, self.state.frame_top*mm))
+                            bboxes.append((0, 0, self.state.frame_width*self.unit, self.state.frame_top*self.unit))
                         if self.state.frame_bottom > 0:
-                            bboxes.append((0, self.state.frame_height*mm-self.state.frame_bottom*mm, self.state.frame_width*mm, self.state.frame_height*mm))
+                            bboxes.append((0, self.state.frame_height*self.unit-self.state.frame_bottom*self.unit, self.state.frame_width*self.unit, self.state.frame_height*self.unit))
                         if self.state.frame_left > 0:
-                            bboxes.append((0, 0, self.state.frame_left*mm, self.state.frame_height*mm))
+                            bboxes.append((0, 0, self.state.frame_left*self.unit, self.state.frame_height*self.unit))
                         if self.state.frame_right > 0:
-                            bboxes.append((self.state.frame_width*mm-self.state.frame_right*mm, 0, self.state.frame_width*mm, self.state.frame_height*mm))
+                            bboxes.append((self.state.frame_width*self.unit-self.state.frame_right*self.unit, 0, self.state.frame_width*self.unit, self.state.frame_height*self.unit))
 
                 x1, y1, x2, y2 = pcb.nbbox
                 row_bboxes = [(b[0],b[2]) for b in bboxes if LineString([(0, b[1]), (0, b[3])]).intersects(LineString([(0, y1), (0, y2)]))]
@@ -491,12 +494,12 @@ class UI(Application):
 
                 # top
                 if col_bboxes and y1 != min([b[0] for b in col_bboxes]):
-                    n = math.ceil((x2-x1) / (max_tab_spacing*mm))+1
+                    n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
-                        p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y1 - spacing/2*mm)
+                        p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y1 - spacing/2*self.unit)
                         dbg_points.append(p)
                         try: # outward
-                            tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*mm)
+                            tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*self.unit)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
@@ -505,7 +508,7 @@ class UI(Application):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
-                                    tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*mm)
+                                    tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*self.unit)
                                     if tab: # tab, tabface
                                         tabs.append(tab[0])
                                         cuts.append(tab[1])
@@ -516,12 +519,12 @@ class UI(Application):
 
                 # bottom
                 if col_bboxes and y2 != max([b[1] for b in col_bboxes]):
-                    n = math.ceil((x2-x1) / (max_tab_spacing*mm))+1
+                    n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
-                        p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y2 + spacing/2*mm)
+                        p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y2 + spacing/2*self.unit)
                         dbg_points.append(p)
                         try: # outward
-                            tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*mm)
+                            tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*self.unit)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
@@ -530,7 +533,7 @@ class UI(Application):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
-                                    tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*mm)
+                                    tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*self.unit)
                                     if tab: # tab, tabface
                                         tabs.append(tab[0])
                                         cuts.append(tab[1])
@@ -540,12 +543,12 @@ class UI(Application):
                             pass
 
                 if row_bboxes and x1 != min([b[0] for b in row_bboxes]): # left
-                    n = math.ceil((y2-y1) / (max_tab_spacing*mm))+1
+                    n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
-                        p = (pos_x + x1 - spacing/2*mm , pos_y + y1 + (y2-y1)*i/n)
+                        p = (pos_x + x1 - spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
                         dbg_points.append(p)
                         try: # outward
-                            tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*mm)
+                            tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*self.unit)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
@@ -554,7 +557,7 @@ class UI(Application):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
-                                    tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*mm)
+                                    tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*self.unit)
                                     if tab: # tab, tabface
                                         tabs.append(tab[0])
                                         cuts.append(tab[1])
@@ -563,12 +566,12 @@ class UI(Application):
                         except:
                             pass
                 if row_bboxes and x2 != max([b[1] for b in row_bboxes]): # right
-                    n = math.ceil((y2-y1) / (max_tab_spacing*mm))+1
+                    n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
-                        p = (pos_x + x2 + spacing/2*mm , pos_y + y1 + (y2-y1)*i/n)
+                        p = (pos_x + x2 + spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
                         dbg_points.append(p)
                         try: # outward
-                            tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*mm)
+                            tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*self.unit)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
@@ -577,7 +580,7 @@ class UI(Application):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
-                                    tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*mm)
+                                    tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*self.unit)
                                     if tab: # tab, tabface
                                         tabs.append(tab[0])
                                         cuts.append(tab[1])
@@ -595,7 +598,7 @@ class UI(Application):
                 dbg_rects.append(s.bounds)
 
         if not save:
-            panel.addMillFillets(self.state.mill_fillets*mm)
+            panel.addMillFillets(self.state.mill_fillets*self.unit)
             self.state.dbg_points = dbg_points
             self.state.dbg_rects = dbg_rects
             self.state.dbg_text = dbg_text
@@ -606,7 +609,7 @@ class UI(Application):
         cut_method = self.state.cut_method
         if cut_method == "mb":
             bites.extend(cuts)
-            panel.makeMouseBites(cuts, diameter=mb_diameter * mm, spacing=mb_spacing * mm, offset=0 * mm, prolongation=0 * mm)
+            panel.makeMouseBites(cuts, diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
         elif cut_method == "vc":
             panel.makeVCuts(cuts)
             vcuts.extend(cuts)
@@ -618,7 +621,7 @@ class UI(Application):
                     for pcb in pcbs:
                         x1, y1, x2, y2 = pcb.nbbox
                         if pos_x+x1 < p1[0] and p1[0] < pos_x+x2:
-                            panel.makeMouseBites([line], diameter=mb_diameter * mm, spacing=mb_spacing * mm, offset=0 * mm, prolongation=0 * mm)
+                            panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
                             bites.append(line)
                             break
                     else:
@@ -629,7 +632,7 @@ class UI(Application):
                     for pcb in pcbs:
                         x1, y1, x2, y2 = pcb.nbbox
                         if pos_y+y1 < p1[1] and p1[1] < pos_y+y2:
-                            panel.makeMouseBites([line], diameter=mb_diameter * mm, spacing=mb_spacing * mm, offset=0 * mm, prolongation=0 * mm)
+                            panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
                             bites.append(line)
                             break
                     else:
@@ -660,11 +663,11 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     if top is None:
-                        top = by2 + self.state.spacing * mm
+                        top = by2 + self.state.spacing * self.unit
                     else:
-                        top = max(top, by2 + self.state.spacing * mm)
+                        top = max(top, by2 + self.state.spacing * self.unit)
             if top is None:
-                pcb.setTop((self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * mm)
+                pcb.setTop((self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * self.unit)
             else:
                 pcb.setTop(top)
         self.autoScale()
@@ -687,11 +690,11 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     if bottom is None:
-                        bottom = by1 - self.state.spacing * mm
+                        bottom = by1 - self.state.spacing * self.unit
                     else:
-                        bottom = min(bottom, by1 - self.state.spacing * mm)
+                        bottom = min(bottom, by1 - self.state.spacing * self.unit)
             if bottom is None:
-                pcb.setBottom((self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * mm)
+                pcb.setBottom((self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * self.unit)
             else:
                 pcb.setBottom(bottom)
         self.autoScale()
@@ -714,11 +717,11 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
                     if left is None:
-                        left = bx2 + self.state.spacing * mm
+                        left = bx2 + self.state.spacing * self.unit
                     else:
-                        left = max(left, bx2 + self.state.spacing * mm)
+                        left = max(left, bx2 + self.state.spacing * self.unit)
             if left is None:
-                pcb.setLeft((self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * mm)
+                pcb.setLeft((self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * self.unit)
             else:
                 pcb.setLeft(left)
         self.autoScale()
@@ -741,11 +744,11 @@ class UI(Application):
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
                     if right is None:
-                        right = bx1 - self.state.spacing * mm
+                        right = bx1 - self.state.spacing * self.unit
                     else:
-                        right = min(right, bx1 - self.state.spacing * mm)
+                        right = min(right, bx1 - self.state.spacing * self.unit)
             if right is None:
-                pcb.setRight((self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * mm)
+                pcb.setRight((self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * self.unit)
             else:
                 pcb.setRight(right)
         self.autoScale()
@@ -877,7 +880,7 @@ class UI(Application):
             tx1, ty1 = x1-10, y1-10
         elif pcb.rotate % 4 == 3:
             tx1, ty1 = x1-10, y1+10
-        canvas.drawText(tx1, ty1, f"[{index+1}] {pcb.width/mm:.2f}*{pcb.height/mm:.2f}", rotate=pcb.rotate*-90)
+        canvas.drawText(tx1, ty1, f"[{index+1}] {pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-90)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
         x1, y1 = self.toCanvas(x1, y1)
@@ -885,13 +888,13 @@ class UI(Application):
         canvas.drawLine(x1, y1, x2, y2, color=color)
 
     def drawVCutV(self, canvas, x):
-        x1, y1 = self.toCanvas(x, -VC_EXTENT*mm)
-        x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*mm)
+        x1, y1 = self.toCanvas(x, -VC_EXTENT*self.unit)
+        x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*self.unit)
         canvas.drawLine(x1, y1, x2, y2, color=0x4396E2)
 
     def drawVCutH(self, canvas, y):
-        x1, y1 = self.toCanvas(-VC_EXTENT*mm, y)
-        x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*mm, y)
+        x1, y1 = self.toCanvas(-VC_EXTENT*self.unit, y)
+        x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*self.unit, y)
         canvas.drawLine(x1, y1, x2, y2, color=0x4396E2)
 
     def drawMousebites(self, canvas, line):
@@ -899,10 +902,10 @@ class UI(Application):
         mb_diameter = self.state.mb_diameter
         mb_spacing = self.state.mb_spacing
         i = 0
-        while i * mb_spacing * mm <= line.length:
-            p = line.interpolate(i * mb_spacing * mm)
+        while i * mb_spacing * self.unit <= line.length:
+            p = line.interpolate(i * mb_spacing * self.unit)
             x, y = self.toCanvas(p.x, p.y)
-            canvas.drawEllipse(x, y, mb_diameter*mm/2*scale, mb_diameter*mm/2*scale, stroke=0xFFFF00)
+            canvas.drawEllipse(x, y, mb_diameter*self.unit/2*scale, mb_diameter*self.unit/2*scale, stroke=0xFFFF00)
             i += 1
 
     def painter(self, canvas):
@@ -911,7 +914,7 @@ class UI(Application):
 
         if self.state.use_frame:
             x1, y1 = self.toCanvas(0, 0)
-            x2, y2 = self.toCanvas(self.state.frame_width*mm, self.state.frame_height*mm)
+            x2, y2 = self.toCanvas(self.state.frame_width*self.unit, self.state.frame_height*self.unit)
             canvas.drawRect(x1, y1, x2, y2, fill=0x151515)
 
         for i,pcb in enumerate(pcbs):
