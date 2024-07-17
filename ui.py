@@ -228,7 +228,7 @@ class UI(Application):
         self.state.max_tab_spacing = 50.0
         self.state.cut_method = "auto"
         self.state.mb_diameter = 0.6
-        self.state.mb_spacing = 0.3 + self.state.mb_diameter
+        self.state.mb_spacing = round(0.3 + self.state.mb_diameter, 1)
         mb_count = 5
         self.state.tab_width = math.ceil((self.state.mb_spacing * (mb_count-1)) * 10) / 10
         self.state.vc_layer = "Cmts.User"
