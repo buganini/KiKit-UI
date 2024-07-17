@@ -67,11 +67,22 @@ class PCB(StateObject):
         pcb.rotate = self.rotate
         return pcb
 
+    # XXX handle rotation
     def intersects(self, obj, pos_x, pos_y, debug=False):
         for shape in self.shapes:
             if distance(transform(shape, lambda x: x+[pos_x+self.x, pos_y+self.y]), obj) == 0:
                 return True
         return False
+
+    def rotateCCW(self):
+        x, y = self.center
+        self.rotate = self.rotate + 1
+        self.setCenter((x, y))
+
+    def rotateCW(self):
+        x, y = self.center
+        self.rotate = self.rotate - 1
+        self.setCenter((x, y))
 
     def setTop(self, top):
         if self.rotate % 4 == 0:
@@ -112,6 +123,15 @@ class PCB(StateObject):
             self.x = right
         elif self.rotate % 4 == 3:
             self.x = right
+
+    @property
+    def center(self):
+        x1, y1, x2, y2 = self.nbbox
+        return (x1+x2)/2, (y1+y2)/2
+
+    def setCenter(self, value):
+        self.setLeft(value[0] - self.rwidth/2)
+        self.setTop(value[1] - self.rheight/2)
 
     @property
     def rwidth(self):
@@ -703,13 +723,13 @@ class UI(Application):
     def rotateCCW(self):
         pcb = self.state.focus
         if pcb:
-            pcb.rotate += 1
+            pcb.rotateCCW()
             self.build()
 
     def rotateCW(self):
         pcb = self.state.focus
         if pcb:
-            pcb.rotate -= 1
+            pcb.rotateCW()
             self.build()
 
     def toCanvas(self, x, y):
@@ -801,10 +821,10 @@ class UI(Application):
     def keypress(self, event):
         if self.state.focus:
             if event.text == "r":
-                self.state.focus.rotate += 1
+                self.rotateCCW()
                 self.build()
             elif event.text == "R":
-                self.state.focus.rotate -= 1
+                self.rotateCW()
                 self.build()
 
     def add_tab(self, arg):
