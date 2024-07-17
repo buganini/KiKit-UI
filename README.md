@@ -1,6 +1,8 @@
 # Notice
 You probably need to update the python executable path at the first line of ui.py
 
+Tested with KiCad 7.0.10 and KiKit 1.5.1
+
 # Tight Frame + Auto Tab + Auto Cut
 ![UI](screenshots/tight_frame_autotab_autocut.png)
 ## Output
