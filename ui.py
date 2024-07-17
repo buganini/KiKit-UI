@@ -6,6 +6,7 @@ from kikit.common import *
 from kikit.substrate import NoIntersectionError, TabFilletError, closestIntersectionPoint, biteBoundary
 import numpy as np
 from shapely.geometry import Point, Polygon, MultiPolygon, LineString, GeometryCollection, box
+from shapely import transform, distance
 import pcbnew
 import math
 from enum import Enum
@@ -37,15 +38,24 @@ class PCB(StateObject):
         bbox = panelize.findBoardBoundingBox(board)
         self.ident = os.path.join(os.path.basename(os.path.dirname(boardfile)), os.path.basename(boardfile))
         self.pos_x, self.pos_y = bbox.GetPosition()
-        self.edges = []
-        for e in collectEdges(board, Layer.Edge_Cuts, None):
+
+        edges = collectEdges(board, Layer.Edge_Cuts, None)
+        bbox = findBoundingBox(edges)
+        self.shapes = []
+        for e in edges:
             shapeStr = e.GetShapeStr()
             if shapeStr=="Line":
-                self.edges.append(LineString([(e.GetStartX(),e.GetStartY()), (e.GetEndX(), e.GetEndY())]))
+                shape = LineString([(e.GetStartX(),e.GetStartY()), (e.GetEndX(), e.GetEndY())])
             elif shapeStr=="Rect":
-                self.edges.append(LineString(e.GetCorners()))
+                corners = e.GetCorners()
+                shape = Polygon(corners + (corners[0],))
             else:
                 print("Unhandle board edge", shapeStr, e)
+                shape = None
+            if shape:
+                shape = transform(shape, lambda x: x - (bbox.GetX(), bbox.GetY()))
+
+                self.shapes.append(shape)
         self.width = bbox.GetWidth()
         self.height = bbox.GetHeight()
         self.x = 0
@@ -57,9 +67,9 @@ class PCB(StateObject):
         pcb.rotate = self.rotate
         return pcb
 
-    def contains(self, shape):
-        for e in self.edges:
-            if e.intersects(shape):
+    def intersects(self, obj, pos_x, pos_y, debug=False):
+        for shape in self.shapes:
+            if distance(transform(shape, lambda x: x+[pos_x+self.x, pos_y+self.y]), obj) == 0:
                 return True
         return False
 
@@ -451,7 +461,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.contains(tab[1]):
+                                    if pcb.intersects(tab[1], pos_x, pos_y, debug=True):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -475,7 +485,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.contains(tab[1]):
+                                    if pcb.intersects(tab[1], pos_x, pos_y):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -498,7 +508,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.contains(tab[1]):
+                                    if pcb.intersects(tab[1], pos_x, pos_y):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -520,7 +530,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.contains(tab[1]):
+                                    if pcb.intersects(tab[1], pos_x, pos_y):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
