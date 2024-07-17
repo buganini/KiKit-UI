@@ -241,6 +241,9 @@ class UI(Application):
     def __init__(self):
         super().__init__()
         self.state = State()
+        self.state.debug = False
+        self.state.show_mb = True
+        self.state.show_vc = True
         self.state.pcb = []
         self.state.scale = (0, 0, 1)
         self.state.output = ""
@@ -481,7 +484,7 @@ class UI(Application):
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.intersects(tab[1], pos_x, pos_y, debug=True):
+                                    if pcb.intersects(tab[1], pos_x, pos_y):
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -846,7 +849,7 @@ class UI(Application):
             tx1, ty1 = x1-10, y1-10
         elif pcb.rotate % 4 == 3:
             tx1, ty1 = x1-10, y1+10
-        canvas.drawText(tx1, ty1, f"{index+1}", rotate=pcb.rotate*-90)
+        canvas.drawText(tx1, ty1, f"[{index+1}] {pcb.width/mm:.2f}*{pcb.height/mm:.2f}", rotate=pcb.rotate*-90)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
         x1, y1 = self.toCanvas(x1, y1)
@@ -913,19 +916,24 @@ class UI(Application):
         if not self.mousehold or not self.mousemoved or not self.mouse_dragging:
             bites = self.state.bites
             vcuts = self.state.vcuts
-            for line in bites:
-                self.drawMousebites(canvas, line)
-            for line in vcuts:
-                p1 = line.coords[0]
-                p2 = line.coords[-1]
-                if p1[0]==p2[0]: # vertical
-                    self.drawVCutV(canvas, p1[0])
-                elif p1[1]==p2[1]: # horizontal
-                    self.drawVCutH(canvas, p1[1])
+            if self.state.show_mb:
+                for line in bites:
+                    self.drawMousebites(canvas, line)
 
-            # for dbg_pts in self.state.dbg_pts:
-            #     x, y = self.toCanvas(dbg_pts[0], dbg_pts[1])
-            #     canvas.drawEllipse(x, y, 1, 1, stroke=0xFF0000)
+            if self.state.show_vc:
+                for line in vcuts:
+                    p1 = line.coords[0]
+                    p2 = line.coords[-1]
+
+                    if p1[0]==p2[0]: # vertical
+                        self.drawVCutV(canvas, p1[0])
+                    elif p1[1]==p2[1]: # horizontal
+                        self.drawVCutH(canvas, p1[1])
+
+            if self.state.debug:
+                for dbg_pts in self.state.dbg_pts:
+                    x, y = self.toCanvas(dbg_pts[0], dbg_pts[1])
+                    canvas.drawEllipse(x, y, 1, 1, stroke=0xFF0000)
 
             if self.tool == Tool.TAB:
                 x, y = self.mousepos[0], self.mousepos[1]
@@ -1065,6 +1073,12 @@ class UI(Application):
                                     # r += 1
 
                             Spacer()
+
+                            with HBox():
+                                Spacer()
+                                Checkbox("Display Mousebites", self.state("show_mb"))
+                                Checkbox("Display V-Cut", self.state("show_vc"))
+                                Checkbox("Debug", self.state("debug"))
 
 ui = UI()
 ui.run()
