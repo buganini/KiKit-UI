@@ -35,36 +35,33 @@ class PCB(StateObject):
         super().__init__()
         self.file = boardfile
         board = pcbnew.LoadBoard(boardfile)
-        bbox = panelize.findBoardBoundingBox(board)
-        self.ident = os.path.join(os.path.basename(os.path.dirname(boardfile)), os.path.basename(boardfile))
-        self.pos_x, self.pos_y = bbox.GetPosition()
 
-        edges = collectEdges(board, Layer.Edge_Cuts, None)
-        bbox = findBoundingBox(edges)
-        self._shapes = []
-        for e in edges:
-            shapeStr = e.GetShapeStr()
-            if shapeStr=="Line":
-                shape = LineString([(e.GetStartX(),e.GetStartY()), (e.GetEndX(), e.GetEndY())])
-            elif shapeStr=="Rect":
-                corners = e.GetCorners()
-                shape = Polygon(corners + (corners[0],))
-            else:
-                print("Unhandle board edge", shapeStr, e)
-                shape = None
-            if shape:
-                shape = transform(shape, lambda x: x - (bbox.GetX(), bbox.GetY()))
-                self._shapes.append(shape)
-        self.width = bbox.GetWidth()
-        self.height = bbox.GetHeight()
+        panel = panelize.Panel("")
+        panel.appendBoard(
+            boardfile,
+            pcbnew.VECTOR2I(0, 0),
+            origin=panelize.Origin.TopLeft,
+            tolerance=panelize.fromMm(1),
+            rotationAngle=pcbnew.EDA_ANGLE(0, pcbnew.DEGREES_T),
+            inheritDrc=False
+        )
+        s = panel.substrates[0]
+        bbox = s.bounds()
+
+        if isinstance(s.substrates, MultiPolygon):
+            self._shapes = s.substrates.geoms
+        elif isinstance(s.substrates, Polygon):
+            self._shapes = [s.substrates]
+        else:
+            self._shapes = []
+
+        self.ident = os.path.join(os.path.basename(os.path.dirname(boardfile)), os.path.basename(boardfile))
+
         self.x = 0
         self.y = 0
+        self.width = bbox[2] - bbox[0]
+        self.height = bbox[3] - bbox[1]
         self.rotate = 0
-
-    def clone(self):
-        pcb = PCB(self.file)
-        pcb.rotate = self.rotate
-        return pcb
 
     @property
     def shapes(self):
@@ -74,6 +71,11 @@ class PCB(StateObject):
             shape = transform(shape, lambda x: x+[self.x, self.y])
             ret.append(shape)
         return ret
+
+    def clone(self):
+        pcb = PCB(self.file)
+        pcb.rotate = self.rotate
+        return pcb
 
     def distance(self, obj, pos_x, pos_y):
         mdist = None
@@ -374,8 +376,8 @@ class UI(Application):
                 self.state.output = output
             else:
                 return
-            pos_x = pcbs[0].pos_x
-            pos_y = pcbs[0].pos_y
+            pos_x = 20 * self.unit
+            pos_y = 20 * self.unit
 
         panel = panelize.Panel(self.state.output)
         panel.vCutLayer = {
