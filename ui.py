@@ -6,7 +6,7 @@ from kikit.common import *
 from kikit.substrate import NoIntersectionError, TabFilletError, closestIntersectionPoint, biteBoundary
 import numpy as np
 from shapely.geometry import Point, Polygon, MultiPolygon, LineString, GeometryCollection, box
-from shapely import transform, distance
+from shapely import transform, distance, affinity
 import pcbnew
 import math
 from enum import Enum
@@ -41,7 +41,7 @@ class PCB(StateObject):
 
         edges = collectEdges(board, Layer.Edge_Cuts, None)
         bbox = findBoundingBox(edges)
-        self.shapes = []
+        self._shapes = []
         for e in edges:
             shapeStr = e.GetShapeStr()
             if shapeStr=="Line":
@@ -54,8 +54,7 @@ class PCB(StateObject):
                 shape = None
             if shape:
                 shape = transform(shape, lambda x: x - (bbox.GetX(), bbox.GetY()))
-
-                self.shapes.append(shape)
+                self._shapes.append(shape)
         self.width = bbox.GetWidth()
         self.height = bbox.GetHeight()
         self.x = 0
@@ -67,12 +66,25 @@ class PCB(StateObject):
         pcb.rotate = self.rotate
         return pcb
 
-    # XXX handle rotation
-    def intersects(self, obj, pos_x, pos_y, debug=False):
+    @property
+    def shapes(self):
+        ret = []
+        for shape in self._shapes:
+            shape = affinity.rotate(shape, self.rotate*-90, origin=(0,0))
+            shape = transform(shape, lambda x: x+[self.x, self.y])
+            ret.append(shape)
+        return ret
+
+    def distance(self, obj, pos_x, pos_y):
+        mdist = None
         for shape in self.shapes:
-            if distance(transform(shape, lambda x: x+[pos_x+self.x, pos_y+self.y]), obj) == 0:
-                return True
-        return False
+            shape = transform(shape, lambda x: x+[pos_x, pos_y])
+            dist = distance(shape, obj)
+            if mdist is None:
+                mdist = dist
+            else:
+                mdist = min(mdist, dist)
+        return mdist
 
     def rotateCCW(self):
         x, y = self.center
@@ -252,7 +264,9 @@ class UI(Application):
         self.state.focus = None
         self.state.vcuts = []
         self.state.bites = []
-        self.state.dbg_pts = []
+        self.state.dbg_points = []
+        self.state.dbg_rects = []
+        self.state.dbg_text = []
         self.state.substrates = []
         self.state.use_frame = True
         self.state.tight = True
@@ -450,7 +464,9 @@ class UI(Application):
                 frameBody = frameBody.difference(s.exterior().buffer(spacing*mm, join_style="mitre"))
             panel.appendSubstrate(frameBody)
 
-        dbg_pts = []
+        dbg_points = []
+        dbg_rects = []
+        dbg_text = []
         tabs = []
         cuts = []
         if self.state.auto_tab and max_tab_spacing > 0:
@@ -478,13 +494,14 @@ class UI(Application):
                     n = math.ceil((x2-x1) / (max_tab_spacing*mm))+1
                     for i in range(1,n):
                         p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y1 - spacing/2*mm)
-                        dbg_pts.append(p)
+                        dbg_points.append(p)
                         try: # outward
                             tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*mm)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.intersects(tab[1], pos_x, pos_y):
+                                    dist = pcb.distance(tab[1], pos_x, pos_y)
+                                    if dist == 0:
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -502,13 +519,14 @@ class UI(Application):
                     n = math.ceil((x2-x1) / (max_tab_spacing*mm))+1
                     for i in range(1,n):
                         p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y2 + spacing/2*mm)
-                        dbg_pts.append(p)
+                        dbg_points.append(p)
                         try: # outward
                             tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*mm)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.intersects(tab[1], pos_x, pos_y):
+                                    dist = pcb.distance(tab[1], pos_x, pos_y)
+                                    if dist == 0:
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -525,13 +543,14 @@ class UI(Application):
                     n = math.ceil((y2-y1) / (max_tab_spacing*mm))+1
                     for i in range(1,n):
                         p = (pos_x + x1 - spacing/2*mm , pos_y + y1 + (y2-y1)*i/n)
-                        dbg_pts.append(p)
+                        dbg_points.append(p)
                         try: # outward
                             tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*mm)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.intersects(tab[1], pos_x, pos_y):
+                                    dist = pcb.distance(tab[1], pos_x, pos_y)
+                                    if dist == 0:
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -547,13 +566,14 @@ class UI(Application):
                     n = math.ceil((y2-y1) / (max_tab_spacing*mm))+1
                     for i in range(1,n):
                         p = (pos_x + x2 + spacing/2*mm , pos_y + y1 + (y2-y1)*i/n)
-                        dbg_pts.append(p)
+                        dbg_points.append(p)
                         try: # outward
                             tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*mm)
                             if tab: # tab, tabface
                                 tabs.append(tab[0])
                                 for pcb in pcbs:
-                                    if pcb.intersects(tab[1], pos_x, pos_y):
+                                    dist = pcb.distance(tab[1], pos_x, pos_y)
+                                    if dist == 0:
                                         cuts.append(tab[1])
                                         break
                                 try: # inward
@@ -566,11 +586,19 @@ class UI(Application):
                         except:
                             pass
         for tab in tabs:
+            dbg_rects.append(tab.bounds)
             panel.appendSubstrate(tab)
+
+        for pcb in pcbs:
+            shapes = pcb.shapes
+            for s in shapes:
+                dbg_rects.append(s.bounds)
 
         if not save:
             panel.addMillFillets(self.state.mill_fillets*mm)
-            self.state.dbg_pts = dbg_pts
+            self.state.dbg_points = dbg_points
+            self.state.dbg_rects = dbg_rects
+            self.state.dbg_text = dbg_text
             self.state.boardSubstrate = panel.boardSubstrate
 
         vcuts = []
@@ -931,9 +959,16 @@ class UI(Application):
                         self.drawVCutH(canvas, p1[1])
 
             if self.state.debug:
-                for dbg_pts in self.state.dbg_pts:
-                    x, y = self.toCanvas(dbg_pts[0], dbg_pts[1])
+                for point in self.state.dbg_points:
+                    x, y = self.toCanvas(point[0], point[1])
                     canvas.drawEllipse(x, y, 1, 1, stroke=0xFF0000)
+                for rect in self.state.dbg_rects:
+                    x1, y1 = self.toCanvas(rect[0], rect[1])
+                    x2, y2 = self.toCanvas(rect[2], rect[3])
+                    canvas.drawRect(x1, y1, x2, y2, stroke=0xFF0000)
+                for text in self.state.dbg_text:
+                    x, y = self.toCanvas(text[0], text[1])
+                    canvas.drawText(x, y, text[2])
 
             if self.tool == Tool.TAB:
                 x, y = self.mousepos[0], self.mousepos[1]
@@ -1078,7 +1113,7 @@ class UI(Application):
                                 Spacer()
                                 Checkbox("Display Mousebites", self.state("show_mb"))
                                 Checkbox("Display V-Cut", self.state("show_vc"))
-                                Checkbox("Debug", self.state("debug"))
+                                Checkbox("Debug", self.state("debug")).click(self.build)
 
 ui = UI()
 ui.run()
