@@ -1,7 +1,15 @@
-# Notice
-You probably need to update the python executable path at the first line of ui.py
-
 Tested with KiCad 7.0.10 and KiKit 1.5.1
+
+# Installation
+Currently I am using the python bundled with KiCad
+```
+PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
+
+${PYTHON} -m pip install -r requirements.txt
+${PYTHON} kikit-ui.py
+```
+This way is polluting the KiCad environment, please let me know if you know better way to let it find KiCad module
+
 
 # Tight Frame + Auto Tab + Auto Cut
 ![UI](screenshots/tight_frame_autotab_autocut.png)

@@ -1,4 +1,3 @@
-#!/usr/bin/env /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
 from kikit import panelize, substrate
 from kikit.defs import Layer
 from kikit.units import mm, mil
