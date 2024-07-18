@@ -19,7 +19,7 @@ Tested with KiCad 7.0.10 and KiKit 1.5.1
 ![3D Output](screenshots/loose_frame_autotab_mousebites_output_3d.png)
 
 # Auto Tab
-Tab position candidates is determined by PCB Edge / `Max Tab Spacing`, prioritized by divided edge length (smaller first), and skipped if there is an nearby cadidate with higher priority.
+Tab position candidates is determined by PCB Edge / `max_tab_spacing`, prioritized by divided edge length (smaller first), and skipped if there is an nearby (distance < `max_tab_spacing/3`) cadidate with higher priority.
 
 In the below image, small red dots are tab position candidates, bigger red circle are selected candidates, the two rectangles are two half-bridge tabs.
 ![Auto Tab](screenshots/auto_tab_selection.png)

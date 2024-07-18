@@ -540,9 +540,9 @@ class UI(Application):
                     (t[0] == p[0]
                     and
                     (
-                        abs(t[1]-p[1]) < max_tab_spacing*self.unit/2)
+                        abs(t[1]-p[1]) < max_tab_spacing*self.unit/3)
                         or
-                        (t[1] == p[1] and abs(t[0]-p[0]) < max_tab_spacing*self.unit/2)
+                        (t[1] == p[1] and abs(t[0]-p[0]) < max_tab_spacing*self.unit/3)
                     )
                 ]) > 0:
                 continue
