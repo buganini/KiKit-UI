@@ -983,7 +983,12 @@ class UI(Application):
                             .style(bgColor=0x000000))
 
                     with VBox():
-                        Button("Add PCB").click(self.addPCB)
+                        with HBox():
+                            Button("Add PCB").click(self.addPCB)
+                            Spacer()
+                            Checkbox("Display Mousebites", self.state("show_mb"))
+                            Checkbox("Display V-Cut", self.state("show_vc"))
+                            Checkbox("Debug", self.state("debug")).click(self.build)
 
                         if self.state.pcb:
                             with HBox():
@@ -1087,13 +1092,7 @@ class UI(Application):
                                     #     Spacer()
                                     # r += 1
 
-                            Spacer()
-
-                            with HBox():
-                                Spacer()
-                                Checkbox("Display Mousebites", self.state("show_mb"))
-                                Checkbox("Display V-Cut", self.state("show_vc"))
-                                Checkbox("Debug", self.state("debug")).click(self.build)
+                        Spacer()
 
 ui = UI()
 ui.run()
