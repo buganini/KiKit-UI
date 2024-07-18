@@ -12,7 +12,6 @@ from enum import Enum
 import traceback
 import os
 import sys
-# sys.path.append("/Users/buganini/repo/buganini/PUI")
 from PUI.PySide6 import *
 
 VC_EXTENT = 3
