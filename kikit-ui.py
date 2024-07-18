@@ -65,7 +65,7 @@ class PCB(StateObject):
     def shapes(self):
         ret = []
         for shape in self._shapes:
-            shape = affinity.rotate(shape, self.rotate*-90, origin=(0,0))
+            shape = affinity.rotate(shape, self.rotate*-1, origin=(0,0))
             shape = transform(shape, lambda x: x+[self.x, self.y])
             ret.append(shape)
         return ret
@@ -88,52 +88,52 @@ class PCB(StateObject):
 
     def rotateCCW(self):
         x, y = self.center
-        self.rotate = self.rotate + 1
+        self.rotate = self.rotate + 90
         self.setCenter((x, y))
 
     def rotateCW(self):
         x, y = self.center
-        self.rotate = self.rotate - 1
+        self.rotate = self.rotate - 90
         self.setCenter((x, y))
 
     def setTop(self, top):
-        if self.rotate % 4 == 0:
+        if round(self.rotate/90) % 4 == 0:
             self.y = top
-        elif self.rotate % 4 == 1:
+        elif round(self.rotate/90) % 4 == 1:
             self.y = top + self.width
-        elif self.rotate % 4 == 2:
+        elif round(self.rotate/90) % 4 == 2:
             self.y = top + self.height
-        elif self.rotate % 4 == 3:
+        elif round(self.rotate/90) % 4 == 3:
             self.y = top
 
     def setBottom(self, bottom):
-        if self.rotate % 4 == 0:
+        if round(self.rotate/90) % 4 == 0:
             self.y = bottom - self.height
-        elif self.rotate % 4 == 1:
+        elif round(self.rotate/90) % 4 == 1:
             self.y = bottom
-        elif self.rotate % 4 == 2:
+        elif round(self.rotate/90) % 4 == 2:
             self.y = bottom
-        elif self.rotate % 4 == 3:
+        elif round(self.rotate/90) % 4 == 3:
             self.y = bottom - self.width
 
     def setLeft(self, left):
-        if self.rotate % 4 == 0:
+        if round(self.rotate/90) % 4 == 0:
             self.x = left
-        elif self.rotate % 4 == 1:
+        elif round(self.rotate/90) % 4 == 1:
             self.x = left
-        elif self.rotate % 4 == 2:
+        elif round(self.rotate/90) % 4 == 2:
             self.x = left + self.width
-        elif self.rotate % 4 == 3:
+        elif round(self.rotate/90) % 4 == 3:
             self.x = left + self.height
 
     def setRight(self, right):
-        if self.rotate % 4 == 0:
+        if round(self.rotate/90) % 4 == 0:
             self.x = right - self.width
-        elif self.rotate % 4 == 1:
+        elif round(self.rotate/90) % 4 == 1:
             self.x = right - self.height
-        elif self.rotate % 4 == 2:
+        elif round(self.rotate/90) % 4 == 2:
             self.x = right
-        elif self.rotate % 4 == 3:
+        elif round(self.rotate/90) % 4 == 3:
             self.x = right
 
     @property
@@ -157,13 +157,13 @@ class PCB(StateObject):
 
     @property
     def bbox(self):
-        if self.rotate % 4 == 0:
+        if round(self.rotate/90) % 4 == 0:
             x1, y1, x2, y2 = self.x, self.y, self.x+self.width, self.y+self.height
-        elif self.rotate % 4 == 1:
+        elif round(self.rotate/90) % 4 == 1:
             x1, y1, x2, y2 = self.x, self.y, self.x+self.height, self.y-self.width
-        elif self.rotate % 4 == 2:
+        elif round(self.rotate/90) % 4 == 2:
             x1, y1, x2, y2 = self.x, self.y, self.x-self.width, self.y-self.height
-        elif self.rotate % 4 == 3:
+        elif round(self.rotate/90) % 4 == 3:
             x1, y1, x2, y2 = self.x, self.y, self.x-self.height, self.y+self.width
         return x1, y1, x2, y2
 
@@ -439,7 +439,7 @@ class UI(Application):
                 pcbnew.VECTOR2I(round(pos_x + x1), round(pos_y + y1)),
                 origin=panelize.Origin.TopLeft,
                 tolerance=panelize.fromMm(1),
-                rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate * 90, pcbnew.DEGREES_T),
+                rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate, pcbnew.DEGREES_T),
                 inheritDrc=False
             )
 
@@ -849,15 +849,15 @@ class UI(Application):
         x2, y2 = self.toCanvas(x2, y2)
         canvas.drawRect(x1, y1, x2, y2, fill=fill)
 
-        if pcb.rotate % 4 == 0:
+        if round(pcb.rotate/90) % 4 == 0:
             tx1, ty1 = x1+10, y1+10
-        elif pcb.rotate % 4 == 1:
+        elif round(pcb.rotate/90) % 4 == 1:
             tx1, ty1 = x1+10, y1-10
-        elif pcb.rotate % 4 == 2:
+        elif round(pcb.rotate/90) % 4 == 2:
             tx1, ty1 = x1-10, y1-10
-        elif pcb.rotate % 4 == 3:
+        elif round(pcb.rotate/90) % 4 == 3:
             tx1, ty1 = x1-10, y1+10
-        canvas.drawText(tx1, ty1, f"[{index+1}] {pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-90)
+        canvas.drawText(tx1, ty1, f"[{index+1}] {pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
         x1, y1 = self.toCanvas(x1, y1)
