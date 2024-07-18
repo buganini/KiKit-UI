@@ -474,6 +474,10 @@ class UI(Application):
         dbg_text = []
         tabs = []
         cuts = []
+
+        # (x, y), inward_direction, score_divider
+        tab_candidates = []
+
         if self.state.auto_tab and max_tab_spacing > 0:
             for pcb in pcbs:
                 bboxes = [p.nbbox for p in pcbs if p is not pcb]
@@ -499,100 +503,71 @@ class UI(Application):
                     n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y1 - spacing/2*self.unit)
-                        dbg_points.append(p)
-                        try: # outward
-                            tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*self.unit)
-                            if tab: # tab, tabface
-                                tabs.append(tab[0])
-                                for pcb in pcbs:
-                                    dist = pcb.distance(tab[1], pos_x, pos_y)
-                                    if dist == 0:
-                                        cuts.append(tab[1])
-                                        break
-                                try: # inward
-                                    tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*self.unit)
-                                    if tab: # tab, tabface
-                                        tabs.append(tab[0])
-                                        cuts.append(tab[1])
-                                except:
-                                    pass
-                        except:
-                            pass
+                        tab_candidates.append((p, (0,1), (x2-x1)/n))
 
                 # bottom
                 if col_bboxes and y2 != max([b[1] for b in col_bboxes]):
                     n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y2 + spacing/2*self.unit)
-                        dbg_points.append(p)
-                        try: # outward
-                            tab = autotab(panel.boardSubstrate, p, (0,1), tab_width*self.unit)
-                            if tab: # tab, tabface
-                                tabs.append(tab[0])
-                                for pcb in pcbs:
-                                    dist = pcb.distance(tab[1], pos_x, pos_y)
-                                    if dist == 0:
-                                        cuts.append(tab[1])
-                                        break
-                                try: # inward
-                                    tab = autotab(panel.boardSubstrate, p, (0,-1), tab_width*self.unit)
-                                    if tab: # tab, tabface
-                                        tabs.append(tab[0])
-                                        cuts.append(tab[1])
-                                except:
-                                    pass
-                        except:
-                            pass
+                        tab_candidates.append((p, (0,-1), (x2-x1)/n))
 
                 if row_bboxes and x1 != min([b[0] for b in row_bboxes]): # left
                     n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 - spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
-                        dbg_points.append(p)
-                        try: # outward
-                            tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*self.unit)
-                            if tab: # tab, tabface
-                                tabs.append(tab[0])
-                                for pcb in pcbs:
-                                    dist = pcb.distance(tab[1], pos_x, pos_y)
-                                    if dist == 0:
-                                        cuts.append(tab[1])
-                                        break
-                                try: # inward
-                                    tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*self.unit)
-                                    if tab: # tab, tabface
-                                        tabs.append(tab[0])
-                                        cuts.append(tab[1])
-                                except:
-                                    pass
-                        except:
-                            pass
+                        tab_candidates.append((p, (1,0), (y2-y1)/n))
+
                 if row_bboxes and x2 != max([b[1] for b in row_bboxes]): # right
                     n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x2 + spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
-                        dbg_points.append(p)
-                        try: # outward
-                            tab = autotab(panel.boardSubstrate, p, (1,0), tab_width*self.unit)
-                            if tab: # tab, tabface
-                                tabs.append(tab[0])
-                                for pcb in pcbs:
-                                    dist = pcb.distance(tab[1], pos_x, pos_y)
-                                    if dist == 0:
-                                        cuts.append(tab[1])
-                                        break
-                                try: # inward
-                                    tab = autotab(panel.boardSubstrate, p, (-1,0), tab_width*self.unit)
-                                    if tab: # tab, tabface
-                                        tabs.append(tab[0])
-                                        cuts.append(tab[1])
-                                except:
-                                    pass
-                        except:
-                            pass
-        for tab in tabs:
-            dbg_rects.append(tab.bounds)
-            panel.appendSubstrate(tab)
+                        tab_candidates.append((p, (-1,0), (y2-y1)/n))
+
+        tab_candidates.sort(key=lambda t: t[2])
+
+        for p, inward_direction, score_divider in tab_candidates:
+            dbg_points.append((p, 1))
+
+        tab_substrates = []
+        # x, y, abs(direction)
+        tabs = []
+        for p, inward_direction, score_divider in tab_candidates:
+            # prevent overlapping tabs
+            if len([t for t in tabs if
+                    (abs(inward_direction[0]), abs(inward_direction[1]))==(abs(t[2][0]), abs(t[2][1]))
+                    and
+                    (t[0] == p[0]
+                    and
+                    (
+                        abs(t[1]-p[1]) < max_tab_spacing*self.unit/2)
+                        or
+                        (t[1] == p[1] and abs(t[0]-p[0]) < max_tab_spacing*self.unit/2)
+                    )
+                ]) > 0:
+                continue
+            dbg_points.append((p, 5))
+
+            # outward
+            tab = autotab(panel.boardSubstrate, p, (inward_direction[0]*-1,inward_direction[1]*-1), tab_width*self.unit)
+            if tab: # tab, tabface
+                tabs.append((p[0], p[1], (abs(inward_direction[0]), abs(inward_direction[1]))))
+                tab_substrates.append(tab[0])
+                for pcb in pcbs:
+                    dist = pcb.distance(tab[1], pos_x, pos_y)
+                    if dist == 0:
+                        cuts.append(tab[1])
+                        break
+
+                # inward
+                tab = autotab(panel.boardSubstrate, p, inward_direction, tab_width*self.unit)
+                if tab: # tab, tabface
+                    tab_substrates.append(tab[0])
+                    cuts.append(tab[1])
+
+        for t in tab_substrates:
+            dbg_rects.append(t.bounds)
+            panel.appendSubstrate(t)
 
         for pcb in pcbs:
             shapes = pcb.shapes
@@ -964,9 +939,9 @@ class UI(Application):
                         self.drawVCutH(canvas, p1[1])
 
             if self.state.debug:
-                for point in self.state.dbg_points:
+                for point, size in self.state.dbg_points:
                     x, y = self.toCanvas(point[0], point[1])
-                    canvas.drawEllipse(x, y, 1, 1, stroke=0xFF0000)
+                    canvas.drawEllipse(x, y, size, size, stroke=0xFF0000)
                 for rect in self.state.dbg_rects:
                     x1, y1 = self.toCanvas(rect[0], rect[1])
                     x2, y2 = self.toCanvas(rect[2], rect[3])
