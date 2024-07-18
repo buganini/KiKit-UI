@@ -5,11 +5,11 @@ Currently I am using the python bundled with KiCad
 ```
 PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
 
-${PYTHON} -m pip install -r requirements.txt
-${PYTHON} kikit-ui.py
-```
-This way is polluting the KiCad environment, please let me know if you know better way to let it find KiCad module
+${PYTHON} -m venv --system-site-packages env
+./env/bin/pip3 install -r requirements.txt
 
+./env/bin/python3 kikit-ui.py
+```
 
 # Tight Frame + Auto Tab + Auto Cut
 ![UI](screenshots/tight_frame_autotab_autocut.png)
