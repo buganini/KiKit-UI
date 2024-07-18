@@ -292,6 +292,8 @@ class UI(Application):
         self.state.frame_right = 0
         self.state.mill_fillets = 0.5
 
+        self.state.boardSubstrate = None
+
         self.mousepos = None
         self.mouse_dragging = None
         self.mousehold = False
