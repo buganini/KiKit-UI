@@ -4,6 +4,7 @@ from kikit.units import mm, mil
 from kikit.common import *
 from kikit.substrate import NoIntersectionError, TabFilletError, closestIntersectionPoint, biteBoundary
 import numpy as np
+import shapely
 from shapely.geometry import Point, Polygon, MultiPolygon, LineString, GeometryCollection, box
 from shapely import transform, distance, affinity
 import pcbnew
@@ -204,7 +205,8 @@ def autotabs(boardSubstrate, origin, direction, width,
     boardSubstrate.orient()
 
     if boardSubstrate.substrates.contains(Point(origin)) and not boardSubstrate.substrates.boundary.contains(Point(origin)):
-        raise TabError(origin, direction, ["Tab annotation is placed inside the board. It has to be on edge or outside the board."])
+        print(origin, direction, ["Tab annotation is placed inside the board. It has to be on edge or outside the board."])
+        return []
 
     origin = np.array(origin)
     direction = np.around(normalize(direction), 4)
@@ -267,19 +269,26 @@ class UI(Application):
         self.state.debug = False
         self.state.show_mb = True
         self.state.show_vc = True
+
         self.state.pcb = []
         self.state.scale = (0, 0, 1)
+
         self.state.target_path = ""
         self.state.export_path = ""
+
         self.state.canvas_width = 800
         self.state.canvas_height = 800
+
         self.state.focus = None
+
         self.state.vcuts = []
         self.state.bites = []
         self.state.dbg_points = []
         self.state.dbg_rects = []
         self.state.dbg_text = []
         self.state.substrates = []
+        self.state.conflicts = []
+
         self.state.use_frame = True
         self.state.tight = True
         self.state.auto_tab = True
@@ -503,51 +512,64 @@ class UI(Application):
             "User.1": Layer.User_1,
         }.get(self.state.vc_layer, Layer.Cmts_User)
 
+
+        if self.state.use_frame and self.state.frame_top > 0:
+            frame_top_polygon = Polygon([
+                [pos_x, pos_y],
+                [pos_x+self.state.frame_width*self.unit, pos_y],
+                [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_top*self.unit],
+                [pos_x, pos_y+self.state.frame_top*self.unit],
+            ])
+        else:
+            frame_top_polygon = None
+
+        if self.state.use_frame and self.state.frame_bottom > 0:
+            frame_bottom_polygon = Polygon([
+                [pos_x, pos_y+self.state.frame_height*self.unit],
+                [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit],
+                [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
+                [pos_x, pos_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
+            ])
+        else:
+            frame_bottom_polygon = None
+
+        if self.state.use_frame and self.state.frame_left > 0:
+            frame_left_polygon = Polygon([
+                [pos_x, pos_y],
+                [pos_x, pos_y+self.state.frame_height*self.unit],
+                [pos_x+self.state.frame_left*self.unit, pos_y+self.state.frame_height*self.unit],
+                [pos_x+self.state.frame_left*self.unit, pos_y],
+            ])
+        else:
+            frame_left_polygon = None
+
+        if self.state.use_frame and self.state.frame_right > 0:
+            frame_right_polygon = Polygon([
+                [pos_x+self.state.frame_width*self.unit, pos_y],
+                [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit],
+                [pos_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, pos_y+self.state.frame_height*self.unit],
+                [pos_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, pos_y],
+            ])
+        else:
+            frame_right_polygon = None
+
         boundarySubstrates = []
         if self.state.use_frame and not self.state.tight:
-            if self.state.frame_top > 0:
-                polygon = Polygon([
-                    [pos_x, pos_y],
-                    [pos_x+self.state.frame_width*self.unit, pos_y],
-                    [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_top*self.unit],
-                    [pos_x, pos_y+self.state.frame_top*self.unit],
-                ])
-                panel.appendSubstrate(polygon)
-                sub = substrate.Substrate([])
-                sub.union(polygon)
+            if frame_top_polygon:
+                panel.appendSubstrate(frame_top_polygon)
+                sub = substrate.Substrate(frame_top_polygon)
                 boundarySubstrates.append(sub)
-            if self.state.frame_bottom > 0:
-                polygon = Polygon([
-                    [pos_x, pos_y+self.state.frame_height*self.unit],
-                    [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit],
-                    [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
-                    [pos_x, pos_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
-                ])
-                panel.appendSubstrate(polygon)
-                sub = substrate.Substrate([])
-                sub.union(polygon)
+            if frame_bottom_polygon:
+                panel.appendSubstrate(frame_bottom_polygon)
+                sub = substrate.Substrate(frame_bottom_polygon)
                 boundarySubstrates.append(sub)
-            if self.state.frame_left > 0:
-                polygon = Polygon([
-                    [pos_x, pos_y],
-                    [pos_x, pos_y+self.state.frame_height*self.unit],
-                    [pos_x+self.state.frame_left*self.unit, pos_y+self.state.frame_height*self.unit],
-                    [pos_x+self.state.frame_left*self.unit, pos_y],
-                ])
-                panel.appendSubstrate(polygon)
-                sub = substrate.Substrate([])
-                sub.union(polygon)
+            if frame_left_polygon:
+                panel.appendSubstrate(frame_left_polygon)
+                sub = substrate.Substrate(frame_left_polygon)
                 boundarySubstrates.append(sub)
-            if self.state.frame_right > 0:
-                polygon = Polygon([
-                    [pos_x+self.state.frame_width*self.unit, pos_y],
-                    [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit],
-                    [pos_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, pos_y+self.state.frame_height*self.unit],
-                    [pos_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, pos_y],
-                ])
-                panel.appendSubstrate(polygon)
-                sub = substrate.Substrate([])
-                sub.union(polygon)
+            if frame_right_polygon:
+                panel.appendSubstrate(frame_right_polygon)
+                sub = substrate.Substrate(frame_right_polygon)
                 boundarySubstrates.append(sub)
 
         for pcb in pcbs:
@@ -685,7 +707,26 @@ class UI(Application):
 
         for t in tab_substrates:
             dbg_rects.append(t.bounds)
-            panel.appendSubstrate(t)
+            try:
+                panel.appendSubstrate(t)
+            except:
+                traceback.print_exc()
+
+        conflicts = []
+        shapes = [shapely.union_all(p.shapes) for p in pcbs]
+        if frame_top_polygon:
+            shapes.append(frame_top_polygon)
+        if frame_bottom_polygon:
+            shapes.append(frame_bottom_polygon)
+        if frame_left_polygon:
+            shapes.append(frame_left_polygon)
+        if frame_right_polygon:
+            shapes.append(frame_right_polygon)
+        for i,a in enumerate(shapes):
+            for b in shapes[i+1:]:
+                conflict = shapely.intersection(a, b)
+                if not conflict.is_empty:
+                    conflicts.append(conflict)
 
         for pcb in pcbs:
             shapes = pcb.shapes
@@ -694,6 +735,7 @@ class UI(Application):
 
         if not export:
             panel.addMillFillets(self.state.mill_fillets*self.unit)
+            self.state.conflicts = conflicts
             self.state.dbg_points = dbg_points
             self.state.dbg_rects = dbg_rects
             self.state.dbg_text = dbg_text
@@ -1038,6 +1080,12 @@ class UI(Application):
                     coords = interior.coords
                     for i in range(1, len(coords)):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
+
+        for polygon in self.state.conflicts:
+            coords = polygon.exterior.coords
+            for i in range(1, len(coords)):
+                self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
+
 
         if not self.mousehold or not self.mousemoved or not self.mouse_dragging:
             bites = self.state.bites
