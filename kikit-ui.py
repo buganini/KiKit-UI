@@ -53,7 +53,11 @@ class PCB(StateObject):
         else:
             self._shapes = []
 
-        self.ident = os.path.join(os.path.basename(os.path.dirname(boardfile)), os.path.basename(boardfile))
+        folder = os.path.basename(os.path.dirname(boardfile))
+        name = os.path.splitext(os.path.basename(boardfile))[0]
+        if folder != name:
+            name = os.path.join(folder, name)
+        self.ident = name
 
         self.x = 0
         self.y = 0
@@ -349,8 +353,8 @@ class UI(Application):
     def duplicate(self, pcb):
         self._addPCB(pcb.clone())
 
-    def remove(self, i):
-        self.state.pcb.pop(i)
+    def remove(self, pcb):
+        self.state.pcb = [p for p in self.state.pcb if p is not pcb]
         self.autoScale()
         self.build()
 
@@ -857,7 +861,7 @@ class UI(Application):
             tx1, ty1 = x1-10, y1-10
         elif round(pcb.rotate/90) % 4 == 3:
             tx1, ty1 = x1-10, y1+10
-        canvas.drawText(tx1, ty1, f"[{index+1}] {pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1)
+        canvas.drawText(tx1, ty1, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
         x1, y1 = self.toCanvas(x1, y1)
@@ -959,28 +963,19 @@ class UI(Application):
         with Window(size=(1300, 768)).keypress(self.keypress):
             with VBox():
                 with HBox():
-                    with VBox():
-                        with HBox():
-                            with Grid():
-                                for i,pcb in enumerate(self.state.pcb):
-                                    Label(f"{i+1}. {pcb.ident}").grid(row=i, column=0)
-                                    Button("Duplicate").grid(row=i, column=1).click(self.duplicate, pcb)
-                                    Button("Remove").grid(row=i, column=2).click(self.remove, i)
-                            Spacer()
-
-                        self.state.pcb
-                        self.state.bites
-                        self.state.vcuts
-                        self.state.cut_method
-                        self.state.mb_diameter
-                        self.state.mb_spacing
-                        (Canvas(self.painter)
-                            .mousedown(self.mousedown)
-                            .mouseup(self.mouseup)
-                            .mousemove(self.mousemove)
-                            .wheel(self.wheel)
-                            .layout(width=self.state.canvas_width, height=self.state.canvas_height)
-                            .style(bgColor=0x000000))
+                    self.state.pcb
+                    self.state.bites
+                    self.state.vcuts
+                    self.state.cut_method
+                    self.state.mb_diameter
+                    self.state.mb_spacing
+                    (Canvas(self.painter)
+                        .mousedown(self.mousedown)
+                        .mouseup(self.mouseup)
+                        .mousemove(self.mousemove)
+                        .wheel(self.wheel)
+                        .layout(width=self.state.canvas_width, height=self.state.canvas_height)
+                        .style(bgColor=0x000000))
 
                     with VBox():
                         with HBox():
@@ -1062,7 +1057,13 @@ class UI(Application):
                                 Button("Save").click(self.build, True)
 
                             if self.state.focus:
-                                Label("Selected PCB")
+                                with HBox():
+                                    Label("Selected PCB")
+
+                                    Spacer()
+
+                                    Button("Duplicate").click(self.duplicate, self.state.focus)
+                                    Button("Remove").click(self.remove, self.state.focus)
 
                                 with Grid():
                                     r = 0
