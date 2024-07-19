@@ -34,6 +34,7 @@ def nbbox(x1, y1, x2, y2):
 class PCB(StateObject):
     def __init__(self, boardfile):
         super().__init__()
+        boardfile = os.path.realpath(boardfile)
         self.file = boardfile
         board = pcbnew.LoadBoard(boardfile)
 
@@ -366,12 +367,18 @@ class UI(Application):
         if not target.endswith(suffix):
             target += suffix
 
+        target = os.path.realpath(target)
+
         self.state.target_path = target
 
         pcbs = []
         for pcb in self.state.pcb:
+            try:
+                file = os.path.relpath(pcb.file, os.path.dirname(target))
+            except ValueError:
+                file = pcb.file
             pcbs.append({
-                "file": pcb.file,
+                "file": file,
                 "x": pcb.x,
                 "y": pcb.y,
                 "rotate": pcb.rotate,
@@ -404,6 +411,7 @@ class UI(Application):
         if target is None:
             target = OpenFile("Load Panelization", "KiKit Panelization (*.kikit_pnl)")
         if target:
+            target = os.path.realpath(target)
             self.state.target_path = target
         else:
             return
@@ -447,7 +455,10 @@ class UI(Application):
 
             self.state.pcb = []
             for p in data.get("pcb", []):
-                pcb = PCB(p["file"])
+                file = p["file"]
+                if not os.path.isabs(file):
+                    file = os.path.realpath(os.path.join(os.path.dirname(target), file))
+                pcb = PCB(file)
                 pcb.x = p["x"]
                 pcb.y = p["y"]
                 pcb.rotate = p["rotate"]
@@ -1215,7 +1226,7 @@ if inputs:
             ui.build()
     else:
         for boardfile in inputs:
-            if boardfile.ends(PCB_SUFFIX):
+            if boardfile.endswith(PCB_SUFFIX):
                 ui._addPCB(PCB(boardfile))
 
         ui.autoScale()
