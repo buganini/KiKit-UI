@@ -643,46 +643,47 @@ class UI(Application):
                     n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y1 - spacing/2*self.unit)
-                        tab_candidates.append((p, (0,1), (x2-x1)/n))
+                        tab_candidates.append((p, (0,1), n, (x2-x1)/n))
 
                 # bottom
                 if col_bboxes and y2 != max([b[1] for b in col_bboxes]):
                     n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y2 + spacing/2*self.unit)
-                        tab_candidates.append((p, (0,-1), (x2-x1)/n))
+                        tab_candidates.append((p, (0,-1), n, (x2-x1)/n))
 
-                if row_bboxes and x1 != min([b[0] for b in row_bboxes]): # left
+                # left
+                if row_bboxes and x1 != min([b[0] for b in row_bboxes]):
                     n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 - spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
-                        tab_candidates.append((p, (1,0), (y2-y1)/n))
+                        tab_candidates.append((p, (1,0), n, (y2-y1)/n))
 
-                if row_bboxes and x2 != max([b[1] for b in row_bboxes]): # right
+                # right
+                if row_bboxes and x2 != max([b[1] for b in row_bboxes]):
                     n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x2 + spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
-                        tab_candidates.append((p, (-1,0), (y2-y1)/n))
+                        tab_candidates.append((p, (-1,0), n, (y2-y1)/n))
 
-        tab_candidates.sort(key=lambda t: t[2])
+        tab_candidates.sort(key=lambda t: (t[2], t[3]))
 
-        for p, inward_direction, score_divider in tab_candidates:
+        for p, inward_direction, tab_n, score_divider in tab_candidates:
             dbg_points.append((p, 1))
 
         tab_substrates = []
         # x, y, abs(direction)
         tabs = []
-        for p, inward_direction, score_divider in tab_candidates:
+        tab_dist = max_tab_spacing*self.unit/3
+        for p, inward_direction, tab_n, score_divider in tab_candidates:
             # prevent overlapping tabs
             if len([t for t in tabs if
-                    (abs(inward_direction[0]), abs(inward_direction[1]))==(abs(t[2][0]), abs(t[2][1]))
-                    and
-                    (t[0] == p[0]
+                    (abs(inward_direction[0]), abs(inward_direction[1]))==(abs(t[2][0]), abs(t[2][1])) # same axis
                     and
                     (
-                        abs(t[1]-p[1]) < max_tab_spacing*self.unit/3)
+                        (t[0] == p[0] and abs(t[1]-p[1]) < tab_dist)
                         or
-                        (t[1] == p[1] and abs(t[0]-p[0]) < max_tab_spacing*self.unit/3)
+                        (t[1] == p[1] and abs(t[0]-p[0]) < tab_dist)
                     )
                 ]) > 0:
                 continue
