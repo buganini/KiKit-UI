@@ -1,27 +1,39 @@
 Tested with KiCad 7.0.10 and KiKit 1.5.1
 
 # Installation
-Currently I am using the python bundled with KiCad
+Make sure your python can import `pcbnew`
+```
+> python3 -c "import pcbnew; print(pcbnew._pcbnew)"
+<module '_pcbnew' from '/usr/lib/python3/dist-packages/_pcbnew.so'>
+```
+On macOS, I have to use the python interpreter bundled with KiCAD
 ```
 PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
+```
 
+Create a virtual environment and install dependencies
+```
 ${PYTHON} -m venv --system-site-packages env
 ./env/bin/pip3 install -r requirements.txt
+```
 
+Run
+```
 ./env/bin/python3 kikit-ui.py
 ```
 
 # Usage
 ```
+# Just open it
 ./env/bin/python3 kikit-ui.py
 
-# start with PCB files
+# Start with PCB files
 ./env/bin/python3 kikit-ui.py a.kicad_pcb b.kicad_pcb...
 
-# load file
+# Load file
 ./env/bin/python3 kikit-ui.py a.kikit_pnl
 
-# headless export
+# Headless export
 ./env/bin/python3 kikit-ui.py a.kikit_pnl out.kicad_pcb
 ```
 
