@@ -788,13 +788,22 @@ class UI(Application):
         if not todo:
             return
         todo.sort(key=lambda pcb: pcb.nbbox[1])
+
+        yy = (self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * self.unit
+        ys = [yy]
+        for p in todo:
+            x1, y1, x2, y2 = p.nbbox
+            ys.append(y1)
+            ys.append(y2 + self.state.spacing * self.unit)
+        ys.sort()
+
         start = 0
         end = len(todo)
         if pcb:
             start = todo.index(pcb)
             end = start+1
-        for i, pcb in enumerate(todo[start:end], start):
-            ax1, ay1, ax2, ay2 = pcb.nbbox
+        for i, p in enumerate(todo[start:end], start):
+            ax1, ay1, ax2, ay2 = p.nbbox
             top = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
@@ -803,10 +812,17 @@ class UI(Application):
                         top = by2 + self.state.spacing * self.unit
                     else:
                         top = max(top, by2 + self.state.spacing * self.unit)
-            if top is None:
-                pcb.setTop((self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * self.unit)
+
+            if pcb:
+                if top is None:
+                    p.setTop(([y for y in ys if y < ay1] or [ys[0]])[-1])
+                else:
+                    p.setTop(([y for y in ys if y < ay1 and y>=top] or [top])[-1])
             else:
-                pcb.setTop(top)
+                if top is None:
+                    p.setTop(yy)
+                else:
+                    p.setTop(top)
         self.autoScale()
         self.build()
 
@@ -815,13 +831,22 @@ class UI(Application):
         if not todo:
             return
         todo.sort(key=lambda pcb: -pcb.nbbox[3])
+
+        yy = (self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * self.unit
+        ys = [yy]
+        for p in todo:
+            x1, y1, x2, y2 = p.nbbox
+            ys.append(y1 - self.state.spacing * self.unit)
+            ys.append(y2)
+        ys.sort()
+
         start = 0
         end = len(todo)
         if pcb:
             start = todo.index(pcb)
             end = start+1
-        for i, pcb in enumerate(todo[start:end], start):
-            ax1, ay1, ax2, ay2 = pcb.nbbox
+        for i, p in enumerate(todo[start:end], start):
+            ax1, ay1, ax2, ay2 = p.nbbox
             bottom = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
@@ -830,10 +855,16 @@ class UI(Application):
                         bottom = by1 - self.state.spacing * self.unit
                     else:
                         bottom = min(bottom, by1 - self.state.spacing * self.unit)
-            if bottom is None:
-                pcb.setBottom((self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * self.unit)
+            if pcb:
+                if bottom is None:
+                    p.setBottom(([y for y in ys if y > ay2] or [ys[-1]])[0])
+                else:
+                    p.setBottom(([y for y in ys if y > ay2 and y<=bottom] or [bottom])[0])
             else:
-                pcb.setBottom(bottom)
+                if bottom is None:
+                    p.setBottom(yy)
+                else:
+                    p.setBottom(bottom)
         self.autoScale()
         self.build()
 
@@ -842,13 +873,22 @@ class UI(Application):
         if not todo:
             return
         todo.sort(key=lambda pcb: pcb.nbbox[0])
+
+        xx = (self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * self.unit
+        xs = [xx]
+        for p in todo:
+            x1, y1, x2, y2 = p.nbbox
+            xs.append(x1)
+            xs.append(x2 + self.state.spacing * self.unit)
+        xs.sort()
+
         start = 0
         end = len(todo)
         if pcb:
             start = todo.index(pcb)
             end = start+1
-        for i, pcb in enumerate(todo[start:end], start):
-            ax1, ay1, ax2, ay2 = pcb.nbbox
+        for i, p in enumerate(todo[start:end], start):
+            ax1, ay1, ax2, ay2 = p.nbbox
             left = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
@@ -857,10 +897,16 @@ class UI(Application):
                         left = bx2 + self.state.spacing * self.unit
                     else:
                         left = max(left, bx2 + self.state.spacing * self.unit)
-            if left is None:
-                pcb.setLeft((self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * self.unit)
+            if pcb:
+                if left is None:
+                    p.setLeft(([x for x in xs if x < ax1] or [xs[0]])[-1])
+                else:
+                    p.setLeft(([x for x in xs if x < ax1 and x>=left] or [left])[-1])
             else:
-                pcb.setLeft(left)
+                if left is None:
+                    p.setLeft(xx)
+                else:
+                    p.setLeft(left)
         self.autoScale()
         self.build()
 
@@ -869,13 +915,22 @@ class UI(Application):
         if not todo:
             return
         todo.sort(key=lambda pcb: -pcb.nbbox[2])
+
+        xx = (self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * self.unit
+        xs = [xx]
+        for p in todo:
+            x1, y1, x2, y2 = p.nbbox
+            xs.append(x1 - self.state.spacing * self.unit)
+            xs.append(x2)
+        xs.sort()
+
         start = 0
         end = len(todo)
         if pcb:
             start = todo.index(pcb)
             end = start+1
-        for i, pcb in enumerate(todo[start:end], start):
-            ax1, ay1, ax2, ay2 = pcb.nbbox
+        for i, p in enumerate(todo[start:end], start):
+            ax1, ay1, ax2, ay2 = p.nbbox
             right = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = nbbox(*d.bbox)
@@ -884,10 +939,16 @@ class UI(Application):
                         right = bx1 - self.state.spacing * self.unit
                     else:
                         right = min(right, bx1 - self.state.spacing * self.unit)
-            if right is None:
-                pcb.setRight((self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * self.unit)
+            if pcb:
+                if right is None:
+                    p.setRight(([x for x in xs if x > ax2] or [xs[-1]])[0])
+                else:
+                    p.setRight(([x for x in xs if x > ax2 and x<=right] or [right])[0])
             else:
-                pcb.setRight(right)
+                if right is None:
+                    p.setRight(xx)
+                else:
+                    p.setRight(right)
         self.autoScale()
         self.build()
 
