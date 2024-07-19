@@ -11,6 +11,21 @@ ${PYTHON} -m venv --system-site-packages env
 ./env/bin/python3 kikit-ui.py
 ```
 
+# Usage
+```
+./env/bin/python3 kikit-ui.py
+
+# start with PCB files
+./env/bin/python3 kikit-ui.py a.kicad_pcb b.kicad_pcb...
+
+# load file
+./env/bin/python3 kikit-ui.py a.kikit_pnl
+
+# headless export
+./env/bin/python3 kikit-ui.py a.kikit_pnl out.kicad_pcb
+```
+
+
 # Tight Frame + Auto Tab + Auto Cut
 ![UI](screenshots/tight_frame_autotab_autocut.png)
 ## Output
