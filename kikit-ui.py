@@ -1260,6 +1260,8 @@ class UI(Application):
 
                         Spacer()
 
+                        Label(f"Conflicts: {len(self.state.conflicts)}")
+
 ui = UI()
 
 inputs = sys.argv[1:]
