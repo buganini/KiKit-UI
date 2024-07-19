@@ -1082,10 +1082,12 @@ class UI(Application):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
 
         for polygon in self.state.conflicts:
-            coords = polygon.exterior.coords
-            for i in range(1, len(coords)):
-                self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
-
+            try:
+                coords = polygon.exterior.coords
+                for i in range(1, len(coords)):
+                    self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
+            except:
+                traceback.print_exc()
 
         if not self.mousehold or not self.mousemoved or not self.mouse_dragging:
             bites = self.state.bites
