@@ -12,9 +12,12 @@ from enum import Enum
 import traceback
 import os
 import sys
+import json
 from PUI.PySide6 import *
 
 VC_EXTENT = 3
+PNL_SUFFIX = ".kikit_pnl"
+PCB_SUFFIX = ".kicad_pcb"
 
 class Tool(Enum):
     NONE = 0
@@ -265,7 +268,8 @@ class UI(Application):
         self.state.show_vc = True
         self.state.pcb = []
         self.state.scale = (0, 0, 1)
-        self.state.output = ""
+        self.state.target_path = ""
+        self.state.export_path = ""
         self.state.canvas_width = 800
         self.state.canvas_height = 800
         self.state.focus = None
@@ -301,13 +305,6 @@ class UI(Application):
         self.mousehold = False
         self.tool = Tool.NONE
         self.tool_args = None
-
-        inputs = sys.argv[1:]
-        for boardfile in inputs:
-            self._addPCB(PCB(boardfile))
-
-        self.autoScale()
-        self.build()
 
     def autoScale(self):
         x1, y1 = 0, 0
@@ -358,7 +355,107 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def build(self, save=False):
+    def save(self, target=None):
+        if target is None:
+            print(self.state.target_path)
+            target = SaveFile(self.state.target_path, "KiKit Panelization (*.kikit_pnl)")
+        if not target:
+            return
+
+        suffix = ".kikit_pnl"
+        if not target.endswith(suffix):
+            target += suffix
+
+        self.state.target_path = target
+
+        pcbs = []
+        for pcb in self.state.pcb:
+            pcbs.append({
+                "file": pcb.file,
+                "x": pcb.x,
+                "y": pcb.y,
+                "rotate": pcb.rotate,
+            })
+        data = {
+            "use_frame": self.state.use_frame,
+            "tight": self.state.tight,
+            "auto_tab": self.state.auto_tab,
+            "spacing": self.state.spacing,
+            "max_tab_spacing": self.state.max_tab_spacing,
+            "cut_method": self.state.cut_method,
+            "mb_diameter": self.state.mb_diameter,
+            "mb_spacing": self.state.mb_spacing,
+            "tab_width": self.state.tab_width,
+            "vc_layer": self.state.vc_layer,
+            "frame_width": self.state.frame_width,
+            "frame_height": self.state.frame_height,
+            "frame_top": self.state.frame_top,
+            "frame_bottom": self.state.frame_bottom,
+            "frame_left": self.state.frame_left,
+            "frame_right": self.state.frame_right,
+            "mill_fillets": self.state.mill_fillets,
+            "pcb": pcbs,
+        }
+        with open(target, "w") as f:
+            json.dump(data, f, indent=4)
+
+
+    def load(self, target=None):
+        if target is None:
+            target = OpenFile("Load Panelization", "KiKit Panelization (*.kikit_pnl)")
+        if target:
+            self.state.target_path = target
+        else:
+            return
+
+        with open(target, "r") as f:
+            data = json.load(f)
+            if "use_frame" in data:
+                self.state.use_frame = data["use_frame"]
+            if "tight" in data:
+                self.state.tight = data["tight"]
+            if "auto_tab" in data:
+                self.state.auto_tab = data["auto_tab"]
+            if "spacing" in data:
+                self.state.spacing = data["spacing"]
+            if "max_tab_spacing" in data:
+                self.state.max_tab_spacing = data["max_tab_spacing"]
+            if "cut_method" in data:
+                self.state.cut_method = data["cut_method"]
+            if "mb_diameter" in data:
+                self.state.mb_diameter = data["mb_diameter"]
+            if "mb_spacing" in data:
+                self.state.mb_spacing = data["mb_spacing"]
+            if "tab_width" in data:
+                self.state.tab_width = data["tab_width"]
+            if "vc_layer" in data:
+                self.state.vc_layer = data["vc_layer"]
+            if "frame_width" in data:
+                self.state.frame_width = data["frame_width"]
+            if "frame_height" in data:
+                self.state.frame_height = data["frame_height"]
+            if "frame_top" in data:
+                self.state.frame_top = data["frame_top"]
+            if "frame_bottom" in data:
+                self.state.frame_bottom = data["frame_bottom"]
+            if "frame_left" in data:
+                self.state.frame_left = data["frame_left"]
+            if "frame_right" in data:
+                self.state.frame_right = data["frame_right"]
+            if "mill_fillets" in data:
+                self.state.mill_fillets = data["mill_fillets"]
+
+            self.state.pcb = []
+            for p in data.get("pcb", []):
+                pcb = PCB(p["file"])
+                pcb.x = p["x"]
+                pcb.y = p["y"]
+                pcb.rotate = p["rotate"]
+                self.state.pcb.append(pcb)
+            self.autoScale()
+            self.build()
+
+    def build(self, export=False):
         pcbs = self.state.pcb
         if len(pcbs) == 0:
             return
@@ -369,21 +466,27 @@ class UI(Application):
         mb_diameter = self.state.mb_diameter
         mb_spacing = self.state.mb_spacing
 
+        if export is True:
+            export = SaveFile(self.state.export_path, "KiCad PCB (*.kicad_pcb)")
+            if export:
+                if not export.endswith(PCB_SUFFIX):
+                    export += PCB_SUFFIX
+                self.state.export_path = export
+            else:
+                return
+        elif export:
+            if not export.endswith(PCB_SUFFIX):
+                export += PCB_SUFFIX
+            self.state.export_path = export
+
         pos_x = 0
         pos_y = 0
 
-        if save:
-            output = SaveFile(self.state.output, "KiCad PCB (*.kicad_pcb)")
-            if output:
-                if not output.endswith(".kicad_pcb"):
-                    output += ".kicad_pcb"
-                self.state.output = output
-            else:
-                return
+        if export:
             pos_x = 20 * self.unit
             pos_y = 20 * self.unit
 
-        panel = panelize.Panel(self.state.output)
+        panel = panelize.Panel(self.state.export_path)
         panel.vCutLayer = {
             "Edge.Cuts": Layer.Edge_Cuts,
             "User.1": Layer.User_1,
@@ -578,7 +681,7 @@ class UI(Application):
             for s in shapes:
                 dbg_rects.append(s.bounds)
 
-        if not save:
+        if not export:
             panel.addMillFillets(self.state.mill_fillets*self.unit)
             self.state.dbg_points = dbg_points
             self.state.dbg_rects = dbg_rects
@@ -620,11 +723,11 @@ class UI(Application):
                         panel.makeVCuts([line])
                         vcuts.append(line)
 
-        if not save:
+        if not export:
             self.state.vcuts = vcuts
             self.state.bites = bites
 
-        if save:
+        if export:
             panel.save()
 
     def snap_top(self, pcb=None):
@@ -979,8 +1082,15 @@ class UI(Application):
 
                     with VBox():
                         with HBox():
+                            Button("Load").click(self.load)
+                            Button("Save").click(self.save)
                             Button("Add PCB").click(self.addPCB)
+
                             Spacer()
+
+                            Button("Export").click(self.build, True)
+
+                        with HBox():
                             Checkbox("Display Mousebites", self.state("show_mb"))
                             Checkbox("Display V-Cut", self.state("show_vc"))
                             Checkbox("Debug", self.state("debug")).click(self.build)
@@ -1052,10 +1162,6 @@ class UI(Application):
                                 Button("⇤").click(self.snap_left)
                                 Button("⇥").click(self.snap_right)
 
-                            with HBox():
-                                Spacer()
-                                Button("Save").click(self.build, True)
-
                             if self.state.focus:
                                 with HBox():
                                     Label("Selected PCB")
@@ -1096,4 +1202,22 @@ class UI(Application):
                         Spacer()
 
 ui = UI()
+
+inputs = sys.argv[1:]
+if inputs:
+    if inputs[0].endswith(PNL_SUFFIX):
+        ui.load(inputs[0])
+        if len(inputs) > 1:
+            ui.build(inputs[1])
+            sys.exit(0)
+        else:
+            ui.autoScale()
+            ui.build()
+    else:
+        for boardfile in inputs:
+            if boardfile.ends(PCB_SUFFIX):
+                ui._addPCB(PCB(boardfile))
+
+        ui.autoScale()
+        ui.build()
 ui.run()
