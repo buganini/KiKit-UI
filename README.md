@@ -1,3 +1,5 @@
+This project is built on top of [KiKit](https://github.com/yaqwsx/KiKit).
+
 Tested with KiCad 7.0.10 and KiKit 1.5.1
 
 # Installation
