@@ -821,13 +821,15 @@ class UI(Application):
             return
         todo.sort(key=lambda pcb: pcb.nbbox[1])
 
-        yy = (self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * self.unit
-        ys = [yy]
-        for p in todo:
-            x1, y1, x2, y2 = p.nbbox
-            ys.append(y1)
-            ys.append(y2 + self.state.spacing * self.unit)
-        ys.sort()
+        topmost = (self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * self.unit
+        if pcb:
+            ys = [topmost]
+            for p in todo:
+                x1, y1, x2, y2 = p.nbbox
+                ys.append(y1)
+                ys.append(y2 + self.state.spacing * self.unit)
+                ys.append(y2 - pcb.rheight)
+            ys.sort()
 
         start = 0
         end = len(todo)
@@ -852,7 +854,7 @@ class UI(Application):
                     p.setTop(([y for y in ys if y < ay1 and y>=top] or [top])[-1])
             else:
                 if top is None:
-                    p.setTop(yy)
+                    p.setTop(topmost)
                 else:
                     p.setTop(top)
         self.autoScale()
@@ -864,13 +866,15 @@ class UI(Application):
             return
         todo.sort(key=lambda pcb: -pcb.nbbox[3])
 
-        yy = (self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * self.unit
-        ys = [yy]
-        for p in todo:
-            x1, y1, x2, y2 = p.nbbox
-            ys.append(y1 - self.state.spacing * self.unit)
-            ys.append(y2)
-        ys.sort()
+        bottommost = (self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * self.unit
+        if pcb:
+            ys = [bottommost]
+            for p in todo:
+                x1, y1, x2, y2 = p.nbbox
+                ys.append(y1 - self.state.spacing * self.unit)
+                ys.append(y2)
+                ys.append(y1 + pcb.rheight)
+            ys.sort()
 
         start = 0
         end = len(todo)
@@ -894,7 +898,7 @@ class UI(Application):
                     p.setBottom(([y for y in ys if y > ay2 and y<=bottom] or [bottom])[0])
             else:
                 if bottom is None:
-                    p.setBottom(yy)
+                    p.setBottom(bottommost)
                 else:
                     p.setBottom(bottom)
         self.autoScale()
@@ -906,13 +910,15 @@ class UI(Application):
             return
         todo.sort(key=lambda pcb: pcb.nbbox[0])
 
-        xx = (self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * self.unit
-        xs = [xx]
-        for p in todo:
-            x1, y1, x2, y2 = p.nbbox
-            xs.append(x1)
-            xs.append(x2 + self.state.spacing * self.unit)
-        xs.sort()
+        leftmost = (self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * self.unit
+        if pcb:
+            xs = [leftmost]
+            for p in todo:
+                x1, y1, x2, y2 = p.nbbox
+                xs.append(x1)
+                xs.append(x2 + self.state.spacing * self.unit)
+                xs.append(x2 - pcb.rwidth)
+            xs.sort()
 
         start = 0
         end = len(todo)
@@ -936,7 +942,7 @@ class UI(Application):
                     p.setLeft(([x for x in xs if x < ax1 and x>=left] or [left])[-1])
             else:
                 if left is None:
-                    p.setLeft(xx)
+                    p.setLeft(leftmost)
                 else:
                     p.setLeft(left)
         self.autoScale()
@@ -948,13 +954,15 @@ class UI(Application):
             return
         todo.sort(key=lambda pcb: -pcb.nbbox[2])
 
-        xx = (self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * self.unit
-        xs = [xx]
-        for p in todo:
-            x1, y1, x2, y2 = p.nbbox
-            xs.append(x1 - self.state.spacing * self.unit)
-            xs.append(x2)
-        xs.sort()
+        rightmost = (self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * self.unit
+        if pcb:
+            xs = [rightmost]
+            for p in todo:
+                x1, y1, x2, y2 = p.nbbox
+                xs.append(x1 - self.state.spacing * self.unit)
+                xs.append(x2)
+                xs.append(x1 + pcb.rwidth)
+            xs.sort()
 
         start = 0
         end = len(todo)
@@ -978,7 +986,7 @@ class UI(Application):
                     p.setRight(([x for x in xs if x > ax2 and x<=right] or [right])[0])
             else:
                 if right is None:
-                    p.setRight(xx)
+                    p.setRight(rightmost)
                 else:
                     p.setRight(right)
         self.autoScale()
