@@ -557,19 +557,23 @@ class UI(Application):
         if self.state.use_frame and not self.state.tight:
             if frame_top_polygon:
                 panel.appendSubstrate(frame_top_polygon)
-                sub = substrate.Substrate(frame_top_polygon)
+                sub = substrate.Substrate([])
+                sub.union(frame_top_polygon)
                 boundarySubstrates.append(sub)
             if frame_bottom_polygon:
                 panel.appendSubstrate(frame_bottom_polygon)
-                sub = substrate.Substrate(frame_bottom_polygon)
+                sub = substrate.Substrate([])
+                sub.union(frame_bottom_polygon)
                 boundarySubstrates.append(sub)
             if frame_left_polygon:
                 panel.appendSubstrate(frame_left_polygon)
-                sub = substrate.Substrate(frame_left_polygon)
+                sub = substrate.Substrate([])
+                sub.union(frame_left_polygon)
                 boundarySubstrates.append(sub)
             if frame_right_polygon:
                 panel.appendSubstrate(frame_right_polygon)
-                sub = substrate.Substrate(frame_right_polygon)
+                sub = substrate.Substrate([])
+                sub.union(frame_right_polygon)
                 boundarySubstrates.append(sub)
 
         for pcb in pcbs:
