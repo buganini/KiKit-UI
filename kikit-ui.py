@@ -618,6 +618,13 @@ class UI(Application):
         # (x, y), inward_direction, score_divider
         tab_candidates = []
 
+        x_parts = []
+        y_parts = []
+        for pcb in pcbs:
+            x1, y1, x2, y2 = pcb.nbbox
+            x_parts.append(x1)
+            y_parts.append(y1)
+
         if self.state.auto_tab and max_tab_spacing > 0:
             for pcb in pcbs:
                 bboxes = [p.nbbox for p in pcbs if p is not pcb]
@@ -643,48 +650,67 @@ class UI(Application):
                     n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y1 - spacing/2*self.unit)
-                        tab_candidates.append((p, (0,1), n, (x2-x1)/n))
+                        partition = len([x for x in x_parts if x < p[0]])
+                        tab_candidates.append((p, (0,1), partition, (x2-x1)/n))
 
                 # bottom
                 if col_bboxes and y2 != max([b[1] for b in col_bboxes]):
                     n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y2 + spacing/2*self.unit)
-                        tab_candidates.append((p, (0,-1), n, (x2-x1)/n))
+                        partition = len([x for x in x_parts if x < p[0]])
+                        tab_candidates.append((p, (0,-1), partition, (x2-x1)/n))
 
                 # left
                 if row_bboxes and x1 != min([b[0] for b in row_bboxes]):
                     n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x1 - spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
-                        tab_candidates.append((p, (1,0), n, (y2-y1)/n))
+                        partition = len([y for y in y_parts if y < p[1]])
+                        tab_candidates.append((p, (1,0), partition, (y2-y1)/n))
 
                 # right
                 if row_bboxes and x2 != max([b[1] for b in row_bboxes]):
                     n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
                         p = (pos_x + x2 + spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
-                        tab_candidates.append((p, (-1,0), n, (y2-y1)/n))
+                        partition = len([y for y in y_parts if y < p[1]])
+                        tab_candidates.append((p, (-1,0), partition, (y2-y1)/n))
 
-        tab_candidates.sort(key=lambda t: (t[2], t[3]))
+        tab_candidates.sort(key=lambda t: t[3]) # sort by divided edge length
 
-        for p, inward_direction, tab_n, score_divider in tab_candidates:
+        for p, inward_direction, partiion, score_divider in tab_candidates:
             dbg_points.append((p, 1))
 
         tab_substrates = []
         # x, y, abs(direction)
         tabs = []
         tab_dist = max_tab_spacing*self.unit/3
-        for p, inward_direction, tab_n, score_divider in tab_candidates:
+        for p, inward_direction, partiion, score_divider in tab_candidates:
             # prevent overlapping tabs
             if len([t for t in tabs if
                     (abs(inward_direction[0]), abs(inward_direction[1]))==(abs(t[2][0]), abs(t[2][1])) # same axis
                     and
-                    (
-                        (t[0] == p[0] and abs(t[1]-p[1]) < tab_dist)
+                    t[3] == partiion # same partition
+                    and
+                    ( # nearby
+                        ( # horizontal
+                            abs(inward_direction[1]) == 1
+                            and
+                            t[1] == p[1]
+                            and
+                            abs(t[0]-p[0]) < tab_dist
+                        )
                         or
-                        (t[1] == p[1] and abs(t[0]-p[0]) < tab_dist)
+                        ( # vertical
+                            abs(inward_direction[0]) == 1
+                            and
+                            t[0] == p[0]
+                            and
+                            abs(t[1]-p[1]) < tab_dist
+                        )
                     )
+
                 ]) > 0:
                 continue
             dbg_points.append((p, 5))
@@ -692,7 +718,12 @@ class UI(Application):
             # outward
             tab = autotab(panel.boardSubstrate, p, (inward_direction[0]*-1,inward_direction[1]*-1), tab_width*self.unit)
             if tab: # tab, tabface
-                tabs.append((p[0], p[1], (abs(inward_direction[0]), abs(inward_direction[1]))))
+                tabs.append((
+                    p[0],
+                    p[1],
+                    (abs(inward_direction[0]), abs(inward_direction[1])),
+                    partiion,
+                ))
                 tab_substrates.append(tab[0])
                 for pcb in pcbs:
                     dist = pcb.distance(tab[1], pos_x, pos_y)
@@ -1143,11 +1174,16 @@ class UI(Application):
                     for i in range(1, len(coords)):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
 
-        for polygon in self.state.conflicts:
+        for conflict in self.state.conflicts:
             try:
-                coords = polygon.exterior.coords
-                for i in range(1, len(coords)):
-                    self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
+                if hasattr(conflict, "exterior"):
+                    coords = conflict.exterior.coords
+                    for i in range(1, len(coords)):
+                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
+                else:
+                    coords = conflict.coords
+                    for i in range(1, len(coords)):
+                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
             except:
                 traceback.print_exc()
 
