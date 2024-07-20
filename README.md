@@ -37,6 +37,11 @@ Run
 ./env/bin/python3 kikit-ui.py a.kikit_pnl out.kicad_pcb
 ```
 
+# Global Aligment
+![Global Alignment](screenshots/global_alignment.gif)
+
+# Per-PCB Aligment
+![Per-PCB Alignment](screenshots/single_alignment.gif)
 
 # Tight Frame + Auto Tab + Auto Cut
 ![UI](screenshots/tight_frame_autotab_autocut.png)
