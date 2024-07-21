@@ -45,6 +45,9 @@ Run
 # Per-PCB Aligment
 ![Per-PCB Alignment](screenshots/single_alignment.gif)
 
+# Substrate Hole
+![Substrate Hole](screenshots/substrate_hole.gif)
+
 # Tight Frame + Auto Tab + Auto Cut
 ![UI](screenshots/tight_frame_autotab_autocut.png)
 ## Output
