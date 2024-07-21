@@ -1185,11 +1185,10 @@ class UI(Application):
 
     def drawPCB(self, canvas, index, pcb, highlight):
         fill = 0x225522 if highlight else 0x112211
-        x1, y1, x2, y2 = pcb.bbox
-        x1, y1 = self.toCanvas(x1, y1)
-        x2, y2 = self.toCanvas(x2, y2)
-        canvas.drawRect(x1, y1, x2, y2, fill=fill)
+        for shape in pcb.shapes:
+            self.drawPolygon(canvas, shape.exterior.coords, fill=fill)
 
+        x1, y1, x2, y2 = pcb.bbox
         if round(pcb.rotate/90) % 4 == 0:
             tx1, ty1 = x1+10, y1+10
         elif round(pcb.rotate/90) % 4 == 1:
