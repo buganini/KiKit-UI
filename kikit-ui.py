@@ -1353,7 +1353,6 @@ class UI(Application):
                         with HBox():
                             Button("Load").click(self.load)
                             Button("Save").click(self.save)
-                            Button("Add PCB").click(self.addPCB)
 
                             Spacer()
 
@@ -1432,8 +1431,9 @@ class UI(Application):
                                 Button("⇥").click(self.snap_right)
 
                             with HBox():
-                                if self.state.tight:
-                                    Button("Add Hole").click(self.addHole)
+                                Label("Add")
+                                Button("PCB").click(self.addPCB)
+                                Button("Hole").click(self.addHole)
                                 Spacer()
 
                             if isinstance(self.state.focus, PCB):
