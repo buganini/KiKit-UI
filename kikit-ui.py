@@ -88,6 +88,12 @@ class PCB(StateObject):
         pcb.rotate = self.rotate
         return pcb
 
+    def contains(self, p):
+        for shape in self.shapes:
+            if shape.contains(p):
+                return True
+        return False
+
     def distance(self, obj, pos_x, pos_y):
         mdist = None
         for shape in self.shapes:
@@ -183,6 +189,22 @@ class PCB(StateObject):
     @property
     def nbbox(self):
         return nbbox(*self.bbox)
+
+class Hole(StateObject):
+    def __init__(self, coords):
+        super().__init__()
+        polygon = Polygon(coords)
+        b = polygon.bounds
+        self.x = b[0]
+        self.y = b[1]
+        self._polygon = transform(polygon, lambda x: x-[self.x, self.y])
+
+    @property
+    def polygon(self):
+        return transform(self._polygon, lambda x: x+[self.x, self.y])
+
+    def contains(self, p):
+        return self.polygon.contains(p)
 
 # Modified from tab() in kikit:
 # 1. Don't stop at first hit substrate, it may not be the closest one
@@ -348,7 +370,7 @@ class UI(Application):
         offy = (ch - (dh+y1) * scale) / 2
         self.state.scale = (offx, offy, scale)
 
-    def addPCB(self):
+    def addPCB(self, e):
         boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
         if boardfile:
             self._addPCB(PCB(boardfile))
@@ -366,12 +388,15 @@ class UI(Application):
     def duplicate(self, pcb):
         self._addPCB(pcb.clone())
 
-    def remove(self, pcb):
-        self.state.pcb = [p for p in self.state.pcb if p is not pcb]
-        self.autoScale()
+    def remove(self, e, obj):
+        if isinstance(obj, PCB):
+            self.state.pcb = [p for p in self.state.pcb if p is not obj]
+            self.autoScale()
+        elif obj:
+            self.state.holes = [h for h in self.state.holes if h is not obj]
         self.build()
 
-    def save(self, target=None):
+    def save(self, e, target=None):
         if target is None:
             print(self.state.target_path)
             target = SaveFile(self.state.target_path, "KiKit Panelization (*.kikit_pnl)")
@@ -417,13 +442,13 @@ class UI(Application):
             "frame_right": self.state.frame_right,
             "mill_fillets": self.state.mill_fillets,
             "pcb": pcbs,
-            "hole": list(self.state.holes),
+            "hole": [h.polygon.exterior.coords for h in self.state.holes],
         }
         with open(target, "w") as f:
             json.dump(data, f, indent=4)
 
 
-    def load(self, target=None):
+    def load(self, e, target=None):
         if target is None:
             target = OpenFile("Load Panelization", "KiKit Panelization (*.kikit_pnl)")
         if target:
@@ -469,7 +494,7 @@ class UI(Application):
             if "mill_fillets" in data:
                 self.state.mill_fillets = data["mill_fillets"]
             if "hole" in data:
-                self.state.holes = data["hole"]
+                self.state.holes = [Hole(h) for h in data["hole"]]
 
             self.state.pcb = []
             for p in data.get("pcb", []):
@@ -622,8 +647,7 @@ class UI(Application):
                 frameBody = frameBody.difference(s.exterior().buffer(spacing*self.unit, join_style="mitre"))
 
             for hole in self.state.holes:
-                poly = Polygon(hole)
-                poly = transform(poly, lambda x: x+[pos_x, pos_y])
+                poly = transform(hole.polygon, lambda x: x+[pos_x, pos_y])
                 frameBody = frameBody.difference(poly)
 
             panel.appendSubstrate(frameBody)
@@ -701,9 +725,8 @@ class UI(Application):
         filtered_cands = []
         for p, inward_direction, partition, score_divider in tab_candidates:
             skip = False
-            for shape in self.state.holes:
-                shape = Polygon(shape)
-                shape = transform(shape, lambda x: x+[pos_x, pos_y])
+            for hole in self.state.holes:
+                shape = transform(hole.polygon, lambda x: x+[pos_x, pos_y])
                 if shape.contains(Point(*p)):
                     skip = True
                     break
@@ -846,7 +869,7 @@ class UI(Application):
         if export:
             panel.save()
 
-    def add_hole(self, e):
+    def addHole(self, e):
         self.tool = Tool.HOLE
         self.state.edit_polygon = []
 
@@ -1051,8 +1074,9 @@ class UI(Application):
         polygon = list(self.state.edit_polygon)
         polygon.append(self.fromCanvas(e.x, e.y))
         self.state.edit_polygon = []
-        self.state.holes.append(polygon)
+        self.state.holes.append(Hole(polygon))
         self.tool = Tool.END
+        self.build()
 
     def mousedown(self, e):
         self.mousepos = e.x, e.y
@@ -1070,10 +1094,8 @@ class UI(Application):
             p = Point(x, y)
 
             self.mouse_dragging = None
-            if self.state.focus:
-                x1, y1, x2, y2 = self.state.focus.bbox
-                if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
-                    self.mouse_dragging = self.state.focus
+            if self.state.focus and self.state.focus.contains(p):
+                self.mouse_dragging = self.state.focus
             # if self.mouse_dragging is None:
             #     for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
             #         x1, y1, x2, y2 = pcb.bbox
@@ -1093,14 +1115,24 @@ class UI(Application):
                 pcbs = self.state.pcb
                 x, y = self.fromCanvas(e.x, e.y)
                 p = Point(x, y)
-                for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
-                    x1, y1, x2, y2 = pcb.bbox
-                    if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+
+                for hole in self.state.holes:
+                    if hole.polygon.contains(p):
                         found = True
-                        if self.state.focus is pcb:
+                        if self.state.focus is hole:
                             continue
                         else:
-                            self.state.focus = pcb
+                            self.state.focus = hole
+
+                if not found:
+                    for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
+                        x1, y1, x2, y2 = pcb.bbox
+                        if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+                            found = True
+                            if self.state.focus is pcb:
+                                continue
+                            else:
+                                self.state.focus = pcb
                 if not found:
                     self.state.focus = None
             self.build()
@@ -1138,7 +1170,7 @@ class UI(Application):
         self.state.scale = offx, offy, nscale
 
     def keypress(self, event):
-        if self.state.focus:
+        if isinstance(self.state.focus, PCB):
             if event.text == "r":
                 self.rotateCCW()
                 self.build()
@@ -1241,9 +1273,8 @@ class UI(Application):
                     for i in range(1, len(coords)):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
 
-        if self.state.tight:
-            for hole in self.state.holes:
-                self.drawPolygon(canvas, hole, stroke=0xFF6E00)
+        for hole in self.state.holes:
+            self.drawPolygon(canvas, hole.polygon.exterior.coords, stroke=0xFFCF55 if hole is self.state.focus else 0xFF6E00)
 
         for conflict in self.state.conflicts:
             try:
@@ -1401,10 +1432,10 @@ class UI(Application):
 
                             with HBox():
                                 if self.state.tight:
-                                    Button("Add Hole").click(self.add_hole)
+                                    Button("Add Hole").click(self.addHole)
                                 Spacer()
 
-                            if self.state.focus:
+                            if isinstance(self.state.focus, PCB):
                                 with HBox():
                                     Label("Selected PCB")
 
@@ -1440,6 +1471,14 @@ class UI(Application):
                                     #     Button("↦").click(self.add_tab, Direction.Right)
                                     #     Spacer()
                                     # r += 1
+                            elif self.state.focus:
+                                with HBox():
+                                    Label("Selected Hole")
+
+                                    Spacer()
+
+                                    Button("Remove").click(self.remove, self.state.focus)
+
 
                         Spacer()
 
@@ -1450,9 +1489,9 @@ ui = UI()
 inputs = sys.argv[1:]
 if inputs:
     if inputs[0].endswith(PNL_SUFFIX):
-        ui.load(inputs[0])
+        ui.load(None, inputs[0])
         if len(inputs) > 1:
-            ui.build(inputs[1])
+            ui.build(export=inputs[1])
             sys.exit(0)
         else:
             ui.autoScale()
