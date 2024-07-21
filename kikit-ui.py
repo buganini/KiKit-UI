@@ -394,6 +394,7 @@ class UI(Application):
             self.autoScale()
         elif obj:
             self.state.holes = [h for h in self.state.holes if h is not obj]
+        self.state.focus = None
         self.build()
 
     def save(self, e, target=None):
