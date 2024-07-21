@@ -1129,6 +1129,12 @@ class UI(Application):
         x2, y2 = self.toCanvas(x2, y2)
         canvas.drawLine(x1, y1, x2, y2, color=color)
 
+    def drawPolygon(self, canvas, polygon, stroke=None, fill=None):
+        ps = []
+        for p in polygon:
+            ps.append(self.toCanvas(*p))
+        canvas.drawPolygon(ps, stroke=stroke, fill=fill)
+
     def drawVCutV(self, canvas, x):
         x1, y1 = self.toCanvas(x, -VC_EXTENT*self.unit)
         x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*self.unit)
@@ -1190,8 +1196,7 @@ class UI(Application):
             try:
                 if hasattr(conflict, "exterior"):
                     coords = conflict.exterior.coords
-                    for i in range(1, len(coords)):
-                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
+                    self.drawPolygon(canvas, coords, fill=0xFF0000)
                 else:
                     coords = conflict.coords
                     for i in range(1, len(coords)):
