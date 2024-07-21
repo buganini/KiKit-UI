@@ -1106,7 +1106,7 @@ class UI(Application):
 
     def mouseup(self, e):
         self.mousehold = False
-        if self.tool == Tool.TAB:
+        if self.tool == Tool.TAB or self.tool == Tool.HOLE:
             pass
         elif self.tool == Tool.END:
             self.tool = Tool.NONE
