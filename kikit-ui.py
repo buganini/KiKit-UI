@@ -21,8 +21,12 @@ PNL_SUFFIX = ".kikit_pnl"
 PCB_SUFFIX = ".kicad_pcb"
 
 class Tool(Enum):
+    END = -1
     NONE = 0
     TAB = 1
+    HOLE = 2
+
+
 class Direction(Enum):
     Up = 0
     Down = 1
@@ -287,6 +291,7 @@ class UI(Application):
         self.state.dbg_rects = []
         self.state.dbg_text = []
         self.state.substrates = []
+        self.state.holes = []
         self.state.conflicts = []
 
         self.state.use_frame = True
@@ -315,6 +320,7 @@ class UI(Application):
         self.mousehold = False
         self.tool = Tool.NONE
         self.tool_args = None
+        self.state.edit_polygon = None
 
     def autoScale(self):
         x1, y1 = 0, 0
@@ -411,6 +417,7 @@ class UI(Application):
             "frame_right": self.state.frame_right,
             "mill_fillets": self.state.mill_fillets,
             "pcb": pcbs,
+            "hole": list(self.state.holes),
         }
         with open(target, "w") as f:
             json.dump(data, f, indent=4)
@@ -461,6 +468,8 @@ class UI(Application):
                 self.state.frame_right = data["frame_right"]
             if "mill_fillets" in data:
                 self.state.mill_fillets = data["mill_fillets"]
+            if "hole" in data:
+                self.state.holes = data["hole"]
 
             self.state.pcb = []
             for p in data.get("pcb", []):
@@ -475,7 +484,7 @@ class UI(Application):
             self.autoScale()
             self.build()
 
-    def build(self, export=False):
+    def build(self, e=None, export=False):
         pcbs = self.state.pcb
         if len(pcbs) == 0:
             return
@@ -611,6 +620,12 @@ class UI(Application):
             frameBody = box(x1, y1, x2, y2)
             for s in panel.substrates:
                 frameBody = frameBody.difference(s.exterior().buffer(spacing*self.unit, join_style="mitre"))
+
+            for hole in self.state.holes:
+                poly = Polygon(hole)
+                poly = transform(poly, lambda x: x+[pos_x, pos_y])
+                frameBody = frameBody.difference(poly)
+
             panel.appendSubstrate(frameBody)
 
         dbg_points = []
@@ -683,8 +698,20 @@ class UI(Application):
 
         tab_candidates.sort(key=lambda t: t[3]) # sort by divided edge length
 
-        for p, inward_direction, partiion, score_divider in tab_candidates:
+        filtered_cands = []
+        for p, inward_direction, partition, score_divider in tab_candidates:
+            skip = False
+            for shape in self.state.holes:
+                shape = Polygon(shape)
+                shape = transform(shape, lambda x: x+[pos_x, pos_y])
+                if shape.contains(Point(*p)):
+                    skip = True
+                    break
+            if skip:
+                continue
+            filtered_cands.append((p, inward_direction, partition, score_divider))
             dbg_points.append((p, 1))
+        tab_candidates = filtered_cands
 
         tab_substrates = []
         # x, y, abs(direction)
@@ -819,7 +846,11 @@ class UI(Application):
         if export:
             panel.save()
 
-    def snap_top(self, pcb=None):
+    def add_hole(self, e):
+        self.tool = Tool.HOLE
+        self.state.edit_polygon = []
+
+    def snap_top(self, e, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
@@ -864,7 +895,7 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def snap_bottom(self, pcb=None):
+    def snap_bottom(self, e, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
@@ -908,7 +939,7 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def snap_left(self, pcb=None):
+    def snap_left(self, e, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
@@ -952,7 +983,7 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def snap_right(self, pcb=None):
+    def snap_right(self, e, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
@@ -1016,6 +1047,13 @@ class UI(Application):
         offx, offy, scale = self.state.scale
         return (x - offx)/scale, (y - offy)/scale
 
+    def dbclicked(self, e):
+        polygon = list(self.state.edit_polygon)
+        polygon.append(self.fromCanvas(e.x, e.y))
+        self.state.edit_polygon = []
+        self.state.holes.append(polygon)
+        self.tool = Tool.END
+
     def mousedown(self, e):
         self.mousepos = e.x, e.y
         self.mousehold = True
@@ -1023,6 +1061,9 @@ class UI(Application):
 
         if self.tool == Tool.TAB:
             pass
+        elif self.tool == Tool.HOLE:
+            x, y = self.fromCanvas(e.x, e.y)
+            self.state.edit_polygon.append((x,y))
         else:
             pcbs = self.state.pcb
             x, y = self.fromCanvas(e.x, e.y)
@@ -1044,6 +1085,8 @@ class UI(Application):
         self.mousehold = False
         if self.tool == Tool.TAB:
             pass
+        elif self.tool == Tool.END:
+            self.tool = Tool.NONE
         else:
             if self.mousemoved < 5:
                 found = False
@@ -1063,7 +1106,7 @@ class UI(Application):
             self.build()
 
     def mousemove(self, e):
-        if self.tool == Tool.TAB:
+        if self.tool == Tool.TAB or self.tool == Tool.HOLE:
             self.state()
         elif self.mousehold:
             pdx = e.x - self.mousepos[0]
@@ -1129,6 +1172,12 @@ class UI(Application):
         x2, y2 = self.toCanvas(x2, y2)
         canvas.drawLine(x1, y1, x2, y2, color=color)
 
+    def drawPolyline(self, canvas, polyline, *args, **kwargs):
+        ps = []
+        for p in polyline:
+            ps.append(self.toCanvas(*p))
+        canvas.drawPolyline(ps, *args, **kwargs)
+
     def drawPolygon(self, canvas, polygon, stroke=None, fill=None):
         ps = []
         for p in polygon:
@@ -1192,6 +1241,10 @@ class UI(Application):
                     for i in range(1, len(coords)):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
 
+        if self.state.tight:
+            for hole in self.state.holes:
+                self.drawPolygon(canvas, hole, stroke=0xFF6E00)
+
         for conflict in self.state.conflicts:
             try:
                 if hasattr(conflict, "exterior"):
@@ -1233,10 +1286,17 @@ class UI(Application):
                     x, y = self.toCanvas(text[0], text[1])
                     canvas.drawText(x, y, text[2])
 
-            if self.tool == Tool.TAB:
-                x, y = self.mousepos[0], self.mousepos[1]
-                canvas.drawLine(x-10, y, x+10, y, color=0xFF0000)
-                canvas.drawLine(x, y-10, x, y+10, color=0xFF0000)
+        edit_polygon = self.state.edit_polygon
+        if edit_polygon:
+            edit_polygon = list(edit_polygon)
+            if self.mousepos:
+                edit_polygon.append(self.fromCanvas(*self.mousepos))
+            self.drawPolyline(canvas, edit_polygon, color=0xFF6E00, width=1)
+
+        if self.tool == Tool.TAB or self.tool == Tool.HOLE:
+            x, y = self.mousepos[0], self.mousepos[1]
+            canvas.drawLine(x-10, y, x+10, y, color=0xFF0000)
+            canvas.drawLine(x, y-10, x, y+10, color=0xFF0000)
 
     def content(self):
         with Window(size=(1300, 768)).keypress(self.keypress):
@@ -1249,6 +1309,7 @@ class UI(Application):
                     self.state.mb_diameter
                     self.state.mb_spacing
                     (Canvas(self.painter)
+                        .dblclick(self.dbclicked)
                         .mousedown(self.mousedown)
                         .mouseup(self.mouseup)
                         .mousemove(self.mousemove)
@@ -1264,7 +1325,7 @@ class UI(Application):
 
                             Spacer()
 
-                            Button("Export").click(self.build, True)
+                            Button("Export").click(self.build, export=True)
 
                         with HBox():
                             Checkbox("Display Mousebites", self.state("show_mb"))
@@ -1337,6 +1398,11 @@ class UI(Application):
                                 Button("⤓").click(self.snap_bottom)
                                 Button("⇤").click(self.snap_left)
                                 Button("⇥").click(self.snap_right)
+
+                            with HBox():
+                                if self.state.tight:
+                                    Button("Add Hole").click(self.add_hole)
+                                Spacer()
 
                             if self.state.focus:
                                 with HBox():
