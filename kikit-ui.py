@@ -1304,7 +1304,7 @@ class UI(Application):
 
                     with VBox():
                         with HBox():
-                            Label("File")
+                            Label("Panel")
                             Button("Load").click(self.load)
                             Button("Save").click(self.save)
 
