@@ -1071,13 +1071,15 @@ class UI(Application):
         offx, offy, scale = self.state.scale
         return (x - offx)/scale, (y - offy)/scale
 
-    def dbclicked(self, e):
-        polygon = list(self.state.edit_polygon)
-        polygon.append(self.fromCanvas(e.x, e.y))
-        self.state.edit_polygon = []
-        self.state.holes.append(Hole(polygon))
-        self.tool = Tool.END
-        self.build()
+    def dblclicked(self, e):
+        if self.tool == Tool.HOLE:
+            polygon = list(self.state.edit_polygon)
+            if len(polygon)>=2:
+                polygon.append(self.fromCanvas(e.x, e.y))
+                self.state.edit_polygon = []
+                self.state.holes.append(Hole(polygon))
+                self.tool = Tool.END
+                self.build()
 
     def mousedown(self, e):
         self.mousepos = e.x, e.y
@@ -1340,7 +1342,7 @@ class UI(Application):
                     self.state.mb_diameter
                     self.state.mb_spacing
                     (Canvas(self.painter)
-                        .dblclick(self.dbclicked)
+                        .dblclick(self.dblclicked)
                         .mousedown(self.mousedown)
                         .mouseup(self.mouseup)
                         .mousemove(self.mousemove)
