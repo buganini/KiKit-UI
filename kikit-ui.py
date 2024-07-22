@@ -1352,12 +1352,19 @@ class UI(Application):
 
                     with VBox():
                         with HBox():
+                            Label("File")
                             Button("Load").click(self.load)
                             Button("Save").click(self.save)
 
                             Spacer()
 
                             Button("Export").click(self.build, export=True)
+
+                        with HBox():
+                            Label("Add")
+                            Button("PCB").click(self.addPCB)
+                            Button("Hole").click(self.addHole)
+                            Spacer()
 
                         with HBox():
                             Checkbox("Display Mousebites", self.state("show_mb"))
@@ -1430,12 +1437,6 @@ class UI(Application):
                                 Button("⤓").click(self.snap_bottom)
                                 Button("⇤").click(self.snap_left)
                                 Button("⇥").click(self.snap_right)
-
-                            with HBox():
-                                Label("Add")
-                                Button("PCB").click(self.addPCB)
-                                Button("Hole").click(self.addHole)
-                                Spacer()
 
                             if isinstance(self.state.focus, PCB):
                                 with HBox():
