@@ -105,55 +105,26 @@ class PCB(StateObject):
                 mdist = min(mdist, dist)
         return mdist
 
-    def rotateCCW(self, deg=90):
+    def rotateBy(self, deg=90):
         x, y = self.center
         self.rotate = self.rotate + deg
         self.setCenter((x, y))
 
-    def rotateCW(self, deg=90):
-        x, y = self.center
-        self.rotate = self.rotate - deg
-        self.setCenter((x, y))
-
     def setTop(self, top):
-        if round(self.rotate/90) % 4 == 0:
-            self.y = top
-        elif round(self.rotate/90) % 4 == 1:
-            self.y = top + self.width
-        elif round(self.rotate/90) % 4 == 2:
-            self.y = top + self.height
-        elif round(self.rotate/90) % 4 == 3:
-            self.y = top
+        x1, y1, x2, y2 = self.nbbox
+        self.y = self.y - y1 + top
 
     def setBottom(self, bottom):
-        if round(self.rotate/90) % 4 == 0:
-            self.y = bottom - self.height
-        elif round(self.rotate/90) % 4 == 1:
-            self.y = bottom
-        elif round(self.rotate/90) % 4 == 2:
-            self.y = bottom
-        elif round(self.rotate/90) % 4 == 3:
-            self.y = bottom - self.width
+        x1, y1, x2, y2 = self.nbbox
+        self.y = self.y - y2 + bottom
 
     def setLeft(self, left):
-        if round(self.rotate/90) % 4 == 0:
-            self.x = left
-        elif round(self.rotate/90) % 4 == 1:
-            self.x = left
-        elif round(self.rotate/90) % 4 == 2:
-            self.x = left + self.width
-        elif round(self.rotate/90) % 4 == 3:
-            self.x = left + self.height
+        x1, y1, x2, y2 = self.nbbox
+        self.x = self.x - x1 + left
 
     def setRight(self, right):
-        if round(self.rotate/90) % 4 == 0:
-            self.x = right - self.width
-        elif round(self.rotate/90) % 4 == 1:
-            self.x = right - self.height
-        elif round(self.rotate/90) % 4 == 2:
-            self.x = right
-        elif round(self.rotate/90) % 4 == 3:
-            self.x = right
+        x1, y1, x2, y2 = self.nbbox
+        self.x = self.x - x2 + right
 
     @property
     def center(self):
@@ -161,8 +132,9 @@ class PCB(StateObject):
         return (x1+x2)/2, (y1+y2)/2
 
     def setCenter(self, value):
-        self.setLeft(value[0] - self.rwidth/2)
-        self.setTop(value[1] - self.rheight/2)
+        x1, y1, x2, y2 = self.nbbox
+        self.x = self.x - (x2+x1)/2 + value[0]
+        self.y = self.y - (y2+y1)/2 + value[1]
 
     @property
     def rwidth(self):
@@ -176,15 +148,10 @@ class PCB(StateObject):
 
     @property
     def bbox(self):
-        if round(self.rotate/90) % 4 == 0:
-            x1, y1, x2, y2 = self.x, self.y, self.x+self.width, self.y+self.height
-        elif round(self.rotate/90) % 4 == 1:
-            x1, y1, x2, y2 = self.x, self.y, self.x+self.height, self.y-self.width
-        elif round(self.rotate/90) % 4 == 2:
-            x1, y1, x2, y2 = self.x, self.y, self.x-self.width, self.y-self.height
-        elif round(self.rotate/90) % 4 == 3:
-            x1, y1, x2, y2 = self.x, self.y, self.x-self.height, self.y+self.width
-        return x1, y1, x2, y2
+        p = Polygon([(0, 0), (self.width, 0), (self.width, self.height), (0, self.height)])
+        p = affinity.rotate(p, self.rotate*-1, origin=(0,0))
+        b = p.bounds
+        return self.x+b[0], self.y+b[1], self.x+b[2], self.y+b[3]
 
     @property
     def nbbox(self):
@@ -399,7 +366,6 @@ class UI(Application):
 
     def save(self, e, target=None):
         if target is None:
-            print(self.state.target_path)
             target = SaveFile(self.state.target_path, "KiKit Panelization (*.kikit_pnl)")
         if not target:
             return
@@ -612,10 +578,9 @@ class UI(Application):
                 boundarySubstrates.append(sub)
 
         for pcb in pcbs:
-            x1, y1, x2, y2 = pcb.bbox
             panel.appendBoard(
                 pcb.file,
-                pcbnew.VECTOR2I(round(pos_x + x1), round(pos_y + y1)),
+                pcbnew.VECTOR2I(round(pos_x + pcb.x), round(pos_y + pcb.y)),
                 origin=panelize.Origin.TopLeft,
                 tolerance=panelize.fromMm(1),
                 rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate, pcbnew.DEGREES_T),
@@ -623,7 +588,7 @@ class UI(Application):
             )
 
         if self.state.tight:
-            x1, y1, x2, y2 = nbbox(*pcbs[0].bbox)
+            x1, y1, x2, y2 = pcbs[0].nbbox
             x1 += pos_x
             y1 += pos_y
             x2 += pos_x
@@ -899,7 +864,7 @@ class UI(Application):
             ax1, ay1, ax2, ay2 = p.nbbox
             top = None
             for d in todo[:i][::-1]:
-                bx1, by1, bx2, by2 = nbbox(*d.bbox)
+                bx1, by1, bx2, by2 = d.nbbox
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     if top is None:
                         top = by2 + self.state.spacing * self.unit
@@ -944,7 +909,7 @@ class UI(Application):
             ax1, ay1, ax2, ay2 = p.nbbox
             bottom = None
             for d in todo[:i][::-1]:
-                bx1, by1, bx2, by2 = nbbox(*d.bbox)
+                bx1, by1, bx2, by2 = d.nbbox
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
                     if bottom is None:
                         bottom = by1 - self.state.spacing * self.unit
@@ -988,7 +953,7 @@ class UI(Application):
             ax1, ay1, ax2, ay2 = p.nbbox
             left = None
             for d in todo[:i][::-1]:
-                bx1, by1, bx2, by2 = nbbox(*d.bbox)
+                bx1, by1, bx2, by2 = d.bbox
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
                     if left is None:
                         left = bx2 + self.state.spacing * self.unit
@@ -1032,7 +997,7 @@ class UI(Application):
             ax1, ay1, ax2, ay2 = p.nbbox
             right = None
             for d in todo[:i][::-1]:
-                bx1, by1, bx2, by2 = nbbox(*d.bbox)
+                bx1, by1, bx2, by2 = d.bbox
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
                     if right is None:
                         right = bx1 - self.state.spacing * self.unit
@@ -1051,16 +1016,10 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def rotateCCW(self, e, deg=90):
+    def rotateBy(self, e, deg=90):
         pcb = self.state.focus
         if pcb:
-            pcb.rotateCCW(deg)
-            self.build()
-
-    def rotateCW(self, e, deg=90):
-        pcb = self.state.focus
-        if pcb:
-            pcb.rotateCW(deg)
+            pcb.rotateBy(deg)
             self.build()
 
     def toCanvas(self, x, y):
@@ -1173,10 +1132,10 @@ class UI(Application):
     def keypress(self, event):
         if isinstance(self.state.focus, PCB):
             if event.text == "r":
-                self.rotateCCW()
+                self.rotateBy(-90)
                 self.build()
             elif event.text == "R":
-                self.rotateCW()
+                self.rotateBy(90)
                 self.build()
 
     def add_tab(self, arg):
@@ -1188,16 +1147,9 @@ class UI(Application):
         for shape in pcb.shapes:
             self.drawPolygon(canvas, shape.exterior.coords, fill=fill)
 
-        x1, y1, x2, y2 = pcb.bbox
-        if round(pcb.rotate/90) % 4 == 0:
-            tx1, ty1 = x1+10, y1+10
-        elif round(pcb.rotate/90) % 4 == 1:
-            tx1, ty1 = x1+10, y1-10
-        elif round(pcb.rotate/90) % 4 == 2:
-            tx1, ty1 = x1-10, y1-10
-        elif round(pcb.rotate/90) % 4 == 3:
-            tx1, ty1 = x1-10, y1+10
-        canvas.drawText(tx1, ty1, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1)
+        p = affinity.rotate(Point(10, 10), pcb.rotate*-1, origin=(0,0))
+        x, y = self.toCanvas(pcb.x+p.x, pcb.y+p.y)
+        canvas.drawText(x, y, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
         x1, y1 = self.toCanvas(x1, y1)
@@ -1449,8 +1401,11 @@ class UI(Application):
 
                                     Label("Rotate").grid(row=r, column=0)
                                     with HBox().grid(row=r, column=1):
-                                        Button("↺ (r)").click(self.rotateCCW)
-                                        Button("↻ (R)").click(self.rotateCW)
+                                        Button("↺ (r)").click(self.rotateBy, 90)
+                                        Button("↺ 15°").click(self.rotateBy, 15)
+                                        TextField(self.state.focus("rotate")).change(self.build)
+                                        Button("↻ 15°").click(self.rotateBy, -15)
+                                        Button("↻ (R)").click(self.rotateBy, -90)
                                         Spacer()
                                     r += 1
 
