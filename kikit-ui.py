@@ -352,7 +352,7 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def duplicate(self, pcb):
+    def duplicate(self, e, pcb):
         self._addPCB(pcb.clone())
 
     def remove(self, e, obj):
