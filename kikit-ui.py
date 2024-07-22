@@ -105,14 +105,14 @@ class PCB(StateObject):
                 mdist = min(mdist, dist)
         return mdist
 
-    def rotateCCW(self):
+    def rotateCCW(self, deg=90):
         x, y = self.center
-        self.rotate = self.rotate + 90
+        self.rotate = self.rotate + deg
         self.setCenter((x, y))
 
-    def rotateCW(self):
+    def rotateCW(self, deg=90):
         x, y = self.center
-        self.rotate = self.rotate - 90
+        self.rotate = self.rotate - deg
         self.setCenter((x, y))
 
     def setTop(self, top):
@@ -1051,16 +1051,16 @@ class UI(Application):
         self.autoScale()
         self.build()
 
-    def rotateCCW(self):
+    def rotateCCW(self, e, deg=90):
         pcb = self.state.focus
         if pcb:
-            pcb.rotateCCW()
+            pcb.rotateCCW(deg)
             self.build()
 
-    def rotateCW(self):
+    def rotateCW(self, e, deg=90):
         pcb = self.state.focus
         if pcb:
-            pcb.rotateCW()
+            pcb.rotateCW(deg)
             self.build()
 
     def toCanvas(self, x, y):
