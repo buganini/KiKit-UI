@@ -14,6 +14,7 @@ import traceback
 import os
 import sys
 import json
+import itertools
 from PUI.PySide6 import *
 
 VC_EXTENT = 3
@@ -96,7 +97,11 @@ class PCB(StateObject):
 
     def distance(self, obj, pos_x, pos_y):
         mdist = None
-        for shape in self.shapes:
+        if type(obj) is PCB:
+            objs = obj.shapes
+        else:
+            objs = [obj]
+        for shape, obj in itertools.product(self.shapes, objs):
             shape = transform(shape, lambda x: x+[pos_x, pos_y])
             dist = distance(shape, obj)
             if mdist is None:
@@ -839,7 +844,7 @@ class UI(Application):
         self.tool = Tool.HOLE
         self.state.edit_polygon = []
 
-    def snap_top(self, e, pcb=None):
+    def align_top(self, e, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
@@ -863,13 +868,14 @@ class UI(Application):
         for i, p in enumerate(todo[start:end], start):
             ax1, ay1, ax2, ay2 = p.nbbox
             top = None
+            top_p = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = d.nbbox
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
-                    if top is None:
-                        top = by2 + self.state.spacing * self.unit
-                    else:
-                        top = max(top, by2 + self.state.spacing * self.unit)
+                    t = by2
+                    if top is None or t > top:
+                        top = t
+                        top_p = d
 
             if pcb:
                 if top is None:
@@ -880,11 +886,15 @@ class UI(Application):
                 if top is None:
                     p.setTop(topmost)
                 else:
-                    p.setTop(top)
+                    p.setTop(top + self.state.spacing * self.unit)
+                    dist = p.distance(top_p, 0, 0)
+                    print("align_top", dist/mm, self.state.spacing)
+                    if dist > self.state.spacing*self.unit:
+                        p.setTop(top - dist + self.state.spacing*self.unit)
         self.autoScale()
         self.build()
 
-    def snap_bottom(self, e, pcb=None):
+    def align_bottom(self, e, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
@@ -908,13 +918,14 @@ class UI(Application):
         for i, p in enumerate(todo[start:end], start):
             ax1, ay1, ax2, ay2 = p.nbbox
             bottom = None
+            bottom_p = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = d.nbbox
                 if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
-                    if bottom is None:
-                        bottom = by1 - self.state.spacing * self.unit
-                    else:
-                        bottom = min(bottom, by1 - self.state.spacing * self.unit)
+                    b = by1
+                    if bottom is None or b < bottom:
+                        bottom = b
+                        bottom_p = d
             if pcb:
                 if bottom is None:
                     p.setBottom(([y for y in ys if y > ay2] or [ys[-1]])[0])
@@ -924,11 +935,14 @@ class UI(Application):
                 if bottom is None:
                     p.setBottom(bottommost)
                 else:
-                    p.setBottom(bottom)
+                    p.setBottom(bottom - self.state.spacing * self.unit)
+                    dist = p.distance(bottom_p, 0, 0)
+                    if dist > self.state.spacing*self.unit:
+                        p.setBottom(bottom + dist - self.state.spacing*self.unit)
         self.autoScale()
         self.build()
 
-    def snap_left(self, e, pcb=None):
+    def align_left(self, e, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
@@ -952,13 +966,14 @@ class UI(Application):
         for i, p in enumerate(todo[start:end], start):
             ax1, ay1, ax2, ay2 = p.nbbox
             left = None
+            left_p = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = d.bbox
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
-                    if left is None:
-                        left = bx2 + self.state.spacing * self.unit
-                    else:
-                        left = max(left, bx2 + self.state.spacing * self.unit)
+                    l = bx2
+                    if left is None or l > left:
+                        left = l
+                        left_p = d
             if pcb:
                 if left is None:
                     p.setLeft(([x for x in xs if x < ax1] or [xs[0]])[-1])
@@ -968,11 +983,14 @@ class UI(Application):
                 if left is None:
                     p.setLeft(leftmost)
                 else:
-                    p.setLeft(left)
+                    p.setLeft(left + self.state.spacing * self.unit)
+                    dist = p.distance(left_p, 0, 0)
+                    if dist > self.state.spacing*self.unit:
+                        p.setLeft(left - dist + self.state.spacing*self.unit)
         self.autoScale()
         self.build()
 
-    def snap_right(self, e, pcb=None):
+    def align_right(self, e, pcb=None):
         todo = list(self.state.pcb)
         if not todo:
             return
@@ -996,13 +1014,14 @@ class UI(Application):
         for i, p in enumerate(todo[start:end], start):
             ax1, ay1, ax2, ay2 = p.nbbox
             right = None
+            right_p = None
             for d in todo[:i][::-1]:
                 bx1, by1, bx2, by2 = d.bbox
                 if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
-                    if right is None:
-                        right = bx1 - self.state.spacing * self.unit
-                    else:
-                        right = min(right, bx1 - self.state.spacing * self.unit)
+                    r = bx1
+                    if right is None or r < right:
+                        right = r
+                        right_p = d
             if pcb:
                 if right is None:
                     p.setRight(([x for x in xs if x > ax2] or [xs[-1]])[0])
@@ -1012,7 +1031,10 @@ class UI(Application):
                 if right is None:
                     p.setRight(rightmost)
                 else:
-                    p.setRight(right)
+                    p.setRight(right - self.state.spacing * self.unit)
+                    dist = p.distance(right_p, 0, 0)
+                    if dist > self.state.spacing*self.unit:
+                        p.setRight(right + dist - self.state.spacing*self.unit)
         self.autoScale()
         self.build()
 
@@ -1385,10 +1407,10 @@ class UI(Application):
 
                             with HBox():
                                 Label("Align")
-                                Button("⤒").click(self.snap_top)
-                                Button("⤓").click(self.snap_bottom)
-                                Button("⇤").click(self.snap_left)
-                                Button("⇥").click(self.snap_right)
+                                Button("⤒").click(self.align_top)
+                                Button("⤓").click(self.align_bottom)
+                                Button("⇤").click(self.align_left)
+                                Button("⇥").click(self.align_right)
 
                             if isinstance(self.state.focus, PCB):
                                 with HBox():
@@ -1414,10 +1436,10 @@ class UI(Application):
 
                                     Label("Align").grid(row=r, column=0)
                                     with HBox().grid(row=r, column=1):
-                                        Button("⤒").click(self.snap_top, pcb=self.state.focus)
-                                        Button("⤓").click(self.snap_bottom, pcb=self.state.focus)
-                                        Button("⇤").click(self.snap_left, pcb=self.state.focus)
-                                        Button("⇥").click(self.snap_right, pcb=self.state.focus)
+                                        Button("⤒").click(self.align_top, pcb=self.state.focus)
+                                        Button("⤓").click(self.align_bottom, pcb=self.state.focus)
+                                        Button("⇤").click(self.align_left, pcb=self.state.focus)
+                                        Button("⇥").click(self.align_right, pcb=self.state.focus)
                                         Spacer()
                                     r += 1
 
