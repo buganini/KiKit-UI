@@ -1111,7 +1111,7 @@ class UI(Application):
                 if not found:
                     for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
                         x1, y1, x2, y2 = pcb.bbox
-                        if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
+                        if pcb.contains(p):
                             found = True
                             if self.state.focus is pcb:
                                 continue
