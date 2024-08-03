@@ -904,11 +904,10 @@ class UI(Application):
             else:
                 if top is None:
                     print("-> top most")
-                    if i==0:
-                        # move everything together to prevent overlapping
-                        offset = topmost - ay1
-                        for o in todo[1:]:
-                            o.setTop(o.nbbox[1]+offset)
+                    # move objects behind together to prevent overlapping
+                    offset = topmost - ay1
+                    for o in todo[i:]:
+                        o.setTop(o.nbbox[1]+offset)
                     p.setTop(topmost)
                 else:
                     p.setTop(max(
@@ -960,11 +959,10 @@ class UI(Application):
             else:
                 if bottom is None:
                     print("-> bottom most")
-                    if i==0:
-                        # move everything together to prevent overlapping
-                        offset = bottommost - ay2
-                        for o in todo[1:]:
-                            o.setBottom(o.nbbox[3]+offset)
+                    # move objects behind together to prevent overlapping
+                    offset = bottommost - ay2
+                    for o in todo[i:]:
+                        o.setBottom(o.nbbox[3]+offset)
                     p.setBottom(bottommost)
                 else:
                     p.setBottom(min(
@@ -1017,11 +1015,10 @@ class UI(Application):
             else:
                 if left is None:
                     print("-> left most")
-                    if i==0:
-                        # move everything together to prevent overlapping
-                        offset = leftmost - ax1
-                        for o in todo[1:]:
-                            o.setLeft(o.nbbox[0]+offset)
+                    # move objects behind together to prevent overlapping
+                    offset = leftmost - ax1
+                    for o in todo[i:]:
+                        o.setLeft(o.nbbox[0]+offset)
                     p.setLeft(leftmost)
                 else:
                     p.setLeft(max(
@@ -1074,11 +1071,10 @@ class UI(Application):
             else:
                 if right is None:
                     print("-> right most")
-                    if i==0:
-                        # move everything together to prevent overlapping
-                        offset = rightmost - ax2
-                        for o in todo[1:]:
-                            o.setRight(o.nbbox[2]+offset)
+                    # move objects behind together to prevent overlapping
+                    offset = rightmost - ax2
+                    for o in todo[i:]:
+                        o.setRight(o.nbbox[2]+offset)
                     p.setRight(rightmost)
                 else:
                     p.setRight(min(
