@@ -37,9 +37,33 @@
         },
         {
             "file": "../resources/L.kicad_pcb",
-            "x": 30355665.0,
-            "y": 193000671.0,
+            "x": 28190109.0,
+            "y": 194733117.0,
             "rotate": 90
+        },
+        {
+            "file": "../resources/L.kicad_pcb",
+            "x": 64321145,
+            "y": 208266595.0,
+            "rotate": 270
+        },
+        {
+            "file": "../resources/L.kicad_pcb",
+            "x": 32483320,
+            "y": 272426824.0,
+            "rotate": 90
+        },
+        {
+            "file": "../resources/L.kicad_pcb",
+            "x": 0,
+            "y": 324026824.0,
+            "rotate": 0
+        },
+        {
+            "file": "../resources/L.kicad_pcb",
+            "x": 78789947,
+            "y": 366573546.0,
+            "rotate": 180
         }
     ],
     "hole": []

@@ -15,6 +15,7 @@ import os
 import sys
 import json
 import itertools
+from shootly import *
 from PUI.PySide6 import *
 
 VC_EXTENT = 3
@@ -108,6 +109,22 @@ class PCB(StateObject):
                 mdist = dist
             else:
                 mdist = min(mdist, dist)
+        return mdist
+
+    def directional_distance(self, obj, direction):
+        mdist = None
+        if type(obj) is PCB:
+            objs = obj.shapes
+        else:
+            objs = [obj]
+        for shape, obj in itertools.product(self.shapes, objs):
+            c = collision(shape, obj, direction)
+            if c:
+                dist = LineString(c).length
+                if mdist is None:
+                    mdist = dist
+                else:
+                    mdist = min(mdist, dist)
         return mdist
 
     def rotateBy(self, deg=90):
@@ -866,13 +883,15 @@ class UI(Application):
             start = todo.index(pcb)
             end = start+1
         for i, p in enumerate(todo[start:end], start):
+            print("align_top", self.state.pcb.index(p)+1)
             ax1, ay1, ax2, ay2 = p.nbbox
             top = None
             top_p = None
-            for d in todo[:i][::-1]:
-                bx1, by1, bx2, by2 = d.nbbox
-                if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
-                    t = by2
+            for d in todo[:i]:
+                dist = p.directional_distance(d, (0, -1))
+                print(f" * {self.state.pcb.index(d)+1}. {d.ident}", dist)
+                if dist:
+                    t = ay1 - dist
                     if top is None or t > top:
                         top = t
                         top_p = d
@@ -884,13 +903,18 @@ class UI(Application):
                     p.setTop(([y for y in ys if y < ay1 and y>=top] or [top])[-1])
             else:
                 if top is None:
+                    print("-> top most")
+                    if i==0:
+                        # move everything together to prevent overlapping
+                        offset = topmost - ay1
+                        for o in todo[1:]:
+                            o.setTop(o.nbbox[1]+offset)
                     p.setTop(topmost)
                 else:
-                    p.setTop(top + self.state.spacing * self.unit)
-                    dist = p.distance(top_p, 0, 0)
-                    print("align_top", dist/mm, self.state.spacing)
-                    if dist > self.state.spacing*self.unit:
-                        p.setTop(top - dist + self.state.spacing*self.unit)
+                    p.setTop(max(
+                        top + self.state.spacing*self.unit,
+                        topmost
+                    ))
         self.autoScale()
         self.build()
 
@@ -916,16 +940,18 @@ class UI(Application):
             start = todo.index(pcb)
             end = start+1
         for i, p in enumerate(todo[start:end], start):
+            print("align_bottom", self.state.pcb.index(p)+1)
             ax1, ay1, ax2, ay2 = p.nbbox
             bottom = None
             bottom_p = None
-            for d in todo[:i][::-1]:
-                bx1, by1, bx2, by2 = d.nbbox
-                if LineString([(ax1, 0), (ax2, 0)]).intersects(LineString([(bx1, 0), (bx2, 0)])):
-                    b = by1
+            for d in todo[:i]:
+                dist = p.directional_distance(d, (0, 1))
+                if dist:
+                    b = ay2 + dist
                     if bottom is None or b < bottom:
                         bottom = b
                         bottom_p = d
+
             if pcb:
                 if bottom is None:
                     p.setBottom(([y for y in ys if y > ay2] or [ys[-1]])[0])
@@ -933,12 +959,18 @@ class UI(Application):
                     p.setBottom(([y for y in ys if y > ay2 and y<=bottom] or [bottom])[0])
             else:
                 if bottom is None:
+                    print("-> bottom most")
+                    if i==0:
+                        # move everything together to prevent overlapping
+                        offset = bottommost - ay2
+                        for o in todo[1:]:
+                            o.setBottom(o.nbbox[3]+offset)
                     p.setBottom(bottommost)
                 else:
-                    p.setBottom(bottom - self.state.spacing * self.unit)
-                    dist = p.distance(bottom_p, 0, 0)
-                    if dist > self.state.spacing*self.unit:
-                        p.setBottom(bottom + dist - self.state.spacing*self.unit)
+                    p.setBottom(min(
+                        bottom - self.state.spacing*self.unit,
+                        bottommost
+                    ))
         self.autoScale()
         self.build()
 
@@ -964,16 +996,19 @@ class UI(Application):
             start = todo.index(pcb)
             end = start+1
         for i, p in enumerate(todo[start:end], start):
+            print("align_left", self.state.pcb.index(p)+1)
             ax1, ay1, ax2, ay2 = p.nbbox
             left = None
             left_p = None
-            for d in todo[:i][::-1]:
-                bx1, by1, bx2, by2 = d.bbox
-                if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
-                    l = bx2
+            for d in todo[:i]:
+                dist = p.directional_distance(d, (-1, 0))
+                print(f" * {self.state.pcb.index(d)+1}. {d.ident}", dist)
+                if dist:
+                    l = ax1 - dist
                     if left is None or l > left:
                         left = l
                         left_p = d
+
             if pcb:
                 if left is None:
                     p.setLeft(([x for x in xs if x < ax1] or [xs[0]])[-1])
@@ -981,12 +1016,18 @@ class UI(Application):
                     p.setLeft(([x for x in xs if x < ax1 and x>=left] or [left])[-1])
             else:
                 if left is None:
+                    print("-> left most")
+                    if i==0:
+                        # move everything together to prevent overlapping
+                        offset = leftmost - ax1
+                        for o in todo[1:]:
+                            o.setLeft(o.nbbox[0]+offset)
                     p.setLeft(leftmost)
                 else:
-                    p.setLeft(left + self.state.spacing * self.unit)
-                    dist = p.distance(left_p, 0, 0)
-                    if dist > self.state.spacing*self.unit:
-                        p.setLeft(left - dist + self.state.spacing*self.unit)
+                    p.setLeft(max(
+                        left + self.state.spacing*self.unit,
+                        leftmost
+                    ))
         self.autoScale()
         self.build()
 
@@ -1012,16 +1053,19 @@ class UI(Application):
             start = todo.index(pcb)
             end = start+1
         for i, p in enumerate(todo[start:end], start):
+            print("align_right", self.state.pcb.index(p)+1)
             ax1, ay1, ax2, ay2 = p.nbbox
             right = None
             right_p = None
-            for d in todo[:i][::-1]:
-                bx1, by1, bx2, by2 = d.bbox
-                if LineString([(0, ay1), (0, ay2)]).intersects(LineString([(0, by1), (0, by2)])):
-                    r = bx1
+            for d in todo[:i]:
+                dist = p.directional_distance(d, (1, 0))
+                print(f" * {self.state.pcb.index(d)+1}. {d.ident}", dist)
+                if dist:
+                    r = ax2 + dist
                     if right is None or r < right:
                         right = r
                         right_p = d
+
             if pcb:
                 if right is None:
                     p.setRight(([x for x in xs if x > ax2] or [xs[-1]])[0])
@@ -1029,12 +1073,18 @@ class UI(Application):
                     p.setRight(([x for x in xs if x > ax2 and x<=right] or [right])[0])
             else:
                 if right is None:
+                    print("-> right most")
+                    if i==0:
+                        # move everything together to prevent overlapping
+                        offset = rightmost - ax2
+                        for o in todo[1:]:
+                            o.setRight(o.nbbox[2]+offset)
                     p.setRight(rightmost)
                 else:
-                    p.setRight(right - self.state.spacing * self.unit)
-                    dist = p.distance(right_p, 0, 0)
-                    if dist > self.state.spacing*self.unit:
-                        p.setRight(right + dist - self.state.spacing*self.unit)
+                    p.setRight(min(
+                        right - self.state.spacing*self.unit,
+                        rightmost
+                    ))
         self.autoScale()
         self.build()
 
@@ -1413,8 +1463,9 @@ class UI(Application):
                                 Button("⇥").click(self.align_right)
 
                             if isinstance(self.state.focus, PCB):
+
                                 with HBox():
-                                    Label("Selected PCB")
+                                    Label(f"Selected PCB: {self.state.pcb.index(self.state.focus)+1}. {self.state.focus.ident}")
 
                                     Spacer()
 
