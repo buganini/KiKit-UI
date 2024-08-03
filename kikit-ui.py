@@ -147,13 +147,16 @@ class PCB(StateObject):
 
     @property
     def center(self):
-        x1, y1, x2, y2 = self.bbox
+        p = Polygon([(0, 0), (self.width, 0), (self.width, self.height), (0, self.height)])
+        p = affinity.rotate(p, self.rotate*-1, origin=(0,0))
+        b = p.bounds
+        x1, y1, x2, y2 = self.x+b[0], self.y+b[1], self.x+b[2], self.y+b[3]
         return (x1+x2)/2, (y1+y2)/2
 
     def setCenter(self, value):
-        x1, y1, x2, y2 = self.bbox
-        self.x = self.x - (x2+x1)/2 + value[0]
-        self.y = self.y - (y2+y1)/2 + value[1]
+        x0, y0 = self.center
+        self.x = self.x - x0 + value[0]
+        self.y = self.y - y0 + value[1]
 
     @property
     def rwidth(self):
