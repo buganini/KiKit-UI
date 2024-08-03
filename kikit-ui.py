@@ -414,7 +414,7 @@ class UI(Application):
             "frame_right": self.state.frame_right,
             "mill_fillets": self.state.mill_fillets,
             "pcb": pcbs,
-            "hole": [h.polygon.exterior.coords for h in self.state.holes],
+            "hole": [list(h.polygon.exterior.coords) for h in self.state.holes],
         }
         with open(target, "w") as f:
             json.dump(data, f, indent=4)
