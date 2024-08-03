@@ -35,9 +35,6 @@ class Direction(Enum):
     Left = 2
     Right = 3
 
-def nbbox(x1, y1, x2, y2):
-    return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
-
 class PCB(StateObject):
     def __init__(self, boardfile):
         super().__init__()
@@ -133,51 +130,45 @@ class PCB(StateObject):
         self.setCenter((x, y))
 
     def setTop(self, top):
-        x1, y1, x2, y2 = self.nbbox
+        x1, y1, x2, y2 = self.bbox
         self.y = self.y - y1 + top
 
     def setBottom(self, bottom):
-        x1, y1, x2, y2 = self.nbbox
+        x1, y1, x2, y2 = self.bbox
         self.y = self.y - y2 + bottom
 
     def setLeft(self, left):
-        x1, y1, x2, y2 = self.nbbox
+        x1, y1, x2, y2 = self.bbox
         self.x = self.x - x1 + left
 
     def setRight(self, right):
-        x1, y1, x2, y2 = self.nbbox
+        x1, y1, x2, y2 = self.bbox
         self.x = self.x - x2 + right
 
     @property
     def center(self):
-        x1, y1, x2, y2 = self.nbbox
+        x1, y1, x2, y2 = self.bbox
         return (x1+x2)/2, (y1+y2)/2
 
     def setCenter(self, value):
-        x1, y1, x2, y2 = self.nbbox
+        x1, y1, x2, y2 = self.bbox
         self.x = self.x - (x2+x1)/2 + value[0]
         self.y = self.y - (y2+y1)/2 + value[1]
 
     @property
     def rwidth(self):
         x1, y1, x2, y2 = self.bbox
-        return abs(x2 - x1)
+        return x2 - x1
 
     @property
     def rheight(self):
         x1, y1, x2, y2 = self.bbox
-        return abs(y2 - y1)
+        return y2 - y1
 
     @property
     def bbox(self):
-        p = Polygon([(0, 0), (self.width, 0), (self.width, self.height), (0, self.height)])
-        p = affinity.rotate(p, self.rotate*-1, origin=(0,0))
-        b = p.bounds
-        return self.x+b[0], self.y+b[1], self.x+b[2], self.y+b[3]
-
-    @property
-    def nbbox(self):
-        return nbbox(*self.bbox)
+        p = MultiPolygon(self.shapes)
+        return p.bounds
 
 class Hole(StateObject):
     def __init__(self, coords):
@@ -337,7 +328,7 @@ class UI(Application):
         x1, y1 = 0, 0
         x2, y2 = self.state.frame_width * self.unit, self.state.frame_height * self.unit
         for pcb in self.state.pcb:
-            bbox = pcb.nbbox
+            bbox = pcb.bbox
             x1 = min(x1, bbox[0])
             y1 = min(y1, bbox[1])
             x2 = max(x2, bbox[2])
@@ -610,7 +601,7 @@ class UI(Application):
             )
 
         if self.state.tight:
-            x1, y1, x2, y2 = pcbs[0].nbbox
+            x1, y1, x2, y2 = pcbs[0].bbox
             x1 += pos_x
             y1 += pos_y
             x2 += pos_x
@@ -623,7 +614,7 @@ class UI(Application):
                 y2 = max(y2, pos_y + self.state.frame_height*self.unit)
 
             for pcb in pcbs[1:]:
-                bbox = pcb.nbbox
+                bbox = pcb.bbox
                 x1 = min(x1, pos_x+bbox[0])
                 y1 = min(y1, pos_y+bbox[1])
                 x2 = max(x2, pos_x+bbox[2])
@@ -652,13 +643,13 @@ class UI(Application):
         x_parts = []
         y_parts = []
         for pcb in pcbs:
-            x1, y1, x2, y2 = pcb.nbbox
+            x1, y1, x2, y2 = pcb.bbox
             x_parts.append(x1)
             y_parts.append(y1)
 
         if self.state.auto_tab and max_tab_spacing > 0:
             for pcb in pcbs:
-                bboxes = [p.nbbox for p in pcbs if p is not pcb]
+                bboxes = [p.bbox for p in pcbs if p is not pcb]
                 if self.state.use_frame:
                     if self.state.tight:
                         bboxes.append((0, 0, self.state.frame_width*self.unit, self.state.frame_height*self.unit))
@@ -672,7 +663,7 @@ class UI(Application):
                         if self.state.frame_right > 0:
                             bboxes.append((self.state.frame_width*self.unit-self.state.frame_right*self.unit, 0, self.state.frame_width*self.unit, self.state.frame_height*self.unit))
 
-                x1, y1, x2, y2 = pcb.nbbox
+                x1, y1, x2, y2 = pcb.bbox
                 row_bboxes = [(b[0],b[2]) for b in bboxes if LineString([(0, b[1]), (0, b[3])]).intersects(LineString([(0, y1), (0, y2)]))]
                 col_bboxes = [(b[1],b[3]) for b in bboxes if LineString([(b[0], 0), (b[2], 0)]).intersects(LineString([(x1, 0), (x2, 0)]))]
 
@@ -830,7 +821,7 @@ class UI(Application):
                 p2 = line.coords[-1]
                 if p1[0]==p2[0]: # vertical
                     for pcb in pcbs:
-                        x1, y1, x2, y2 = pcb.nbbox
+                        x1, y1, x2, y2 = pcb.bbox
                         if pos_x+x1 < p1[0] and p1[0] < pos_x+x2:
                             panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
                             bites.append(line)
@@ -841,7 +832,7 @@ class UI(Application):
 
                 elif p1[1]==p2[1]: # horizontal
                     for pcb in pcbs:
-                        x1, y1, x2, y2 = pcb.nbbox
+                        x1, y1, x2, y2 = pcb.bbox
                         if pos_y+y1 < p1[1] and p1[1] < pos_y+y2:
                             panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
                             bites.append(line)
@@ -865,13 +856,13 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: pcb.nbbox[1])
+        todo.sort(key=lambda pcb: pcb.bbox[1])
 
         topmost = (self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * self.unit
         if pcb:
             ys = [topmost]
             for p in todo:
-                x1, y1, x2, y2 = p.nbbox
+                x1, y1, x2, y2 = p.bbox
                 ys.append(y1)
                 ys.append(y2 + self.state.spacing * self.unit)
                 ys.append(y2 - pcb.rheight)
@@ -883,18 +874,14 @@ class UI(Application):
             start = todo.index(pcb)
             end = start+1
         for i, p in enumerate(todo[start:end], start):
-            print("align_top", self.state.pcb.index(p)+1)
-            ax1, ay1, ax2, ay2 = p.nbbox
+            ax1, ay1, ax2, ay2 = p.bbox
             top = None
-            top_p = None
             for d in todo[:i]:
                 dist = p.directional_distance(d, (0, -1))
-                print(f" * {self.state.pcb.index(d)+1}. {d.ident}", dist)
-                if dist:
+                if dist is not None:
                     t = ay1 - dist
                     if top is None or t > top:
                         top = t
-                        top_p = d
 
             if pcb:
                 if top is None:
@@ -903,11 +890,11 @@ class UI(Application):
                     p.setTop(([y for y in ys if y < ay1 and y>=top] or [top])[-1])
             else:
                 if top is None:
-                    print("-> top most")
                     # move objects behind together to prevent overlapping
                     offset = topmost - ay1
-                    for o in todo[i:]:
-                        o.setTop(o.nbbox[1]+offset)
+                    for o in todo[i+1:]:
+                        if o.directional_distance(p, (0, -1)):
+                            o.setTop(o.bbox[1]+offset)
                     p.setTop(topmost)
                 else:
                     p.setTop(max(
@@ -921,13 +908,13 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: -pcb.nbbox[3])
+        todo.sort(key=lambda pcb: -pcb.bbox[3])
 
         bottommost = (self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * self.unit
         if pcb:
             ys = [bottommost]
             for p in todo:
-                x1, y1, x2, y2 = p.nbbox
+                x1, y1, x2, y2 = p.bbox
                 ys.append(y1 - self.state.spacing * self.unit)
                 ys.append(y2)
                 ys.append(y1 + pcb.rheight)
@@ -939,17 +926,14 @@ class UI(Application):
             start = todo.index(pcb)
             end = start+1
         for i, p in enumerate(todo[start:end], start):
-            print("align_bottom", self.state.pcb.index(p)+1)
-            ax1, ay1, ax2, ay2 = p.nbbox
+            ax1, ay1, ax2, ay2 = p.bbox
             bottom = None
-            bottom_p = None
             for d in todo[:i]:
                 dist = p.directional_distance(d, (0, 1))
-                if dist:
+                if dist is not None:
                     b = ay2 + dist
                     if bottom is None or b < bottom:
                         bottom = b
-                        bottom_p = d
 
             if pcb:
                 if bottom is None:
@@ -958,11 +942,11 @@ class UI(Application):
                     p.setBottom(([y for y in ys if y > ay2 and y<=bottom] or [bottom])[0])
             else:
                 if bottom is None:
-                    print("-> bottom most")
                     # move objects behind together to prevent overlapping
                     offset = bottommost - ay2
-                    for o in todo[i:]:
-                        o.setBottom(o.nbbox[3]+offset)
+                    for o in todo[i+1:]:
+                        if o.directional_distance(p, (0, 1)):
+                            o.setBottom(o.bbox[3]+offset)
                     p.setBottom(bottommost)
                 else:
                     p.setBottom(min(
@@ -976,13 +960,13 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: pcb.nbbox[0])
+        todo.sort(key=lambda pcb: pcb.bbox[0])
 
         leftmost = (self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * self.unit
         if pcb:
             xs = [leftmost]
             for p in todo:
-                x1, y1, x2, y2 = p.nbbox
+                x1, y1, x2, y2 = p.bbox
                 xs.append(x1)
                 xs.append(x2 + self.state.spacing * self.unit)
                 xs.append(x2 - pcb.rwidth)
@@ -994,18 +978,14 @@ class UI(Application):
             start = todo.index(pcb)
             end = start+1
         for i, p in enumerate(todo[start:end], start):
-            print("align_left", self.state.pcb.index(p)+1)
-            ax1, ay1, ax2, ay2 = p.nbbox
+            ax1, ay1, ax2, ay2 = p.bbox
             left = None
-            left_p = None
             for d in todo[:i]:
                 dist = p.directional_distance(d, (-1, 0))
-                print(f" * {self.state.pcb.index(d)+1}. {d.ident}", dist)
-                if dist:
+                if dist is not None:
                     l = ax1 - dist
                     if left is None or l > left:
                         left = l
-                        left_p = d
 
             if pcb:
                 if left is None:
@@ -1014,11 +994,11 @@ class UI(Application):
                     p.setLeft(([x for x in xs if x < ax1 and x>=left] or [left])[-1])
             else:
                 if left is None:
-                    print("-> left most")
                     # move objects behind together to prevent overlapping
                     offset = leftmost - ax1
-                    for o in todo[i:]:
-                        o.setLeft(o.nbbox[0]+offset)
+                    for o in todo[i+1:]:
+                        if o.directional_distance(p, (-1, 0)):
+                            o.setLeft(o.bbox[0]+offset)
                     p.setLeft(leftmost)
                 else:
                     p.setLeft(max(
@@ -1032,13 +1012,13 @@ class UI(Application):
         todo = list(self.state.pcb)
         if not todo:
             return
-        todo.sort(key=lambda pcb: -pcb.nbbox[2])
+        todo.sort(key=lambda pcb: -pcb.bbox[2])
 
         rightmost = (self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * self.unit
         if pcb:
             xs = [rightmost]
             for p in todo:
-                x1, y1, x2, y2 = p.nbbox
+                x1, y1, x2, y2 = p.bbox
                 xs.append(x1 - self.state.spacing * self.unit)
                 xs.append(x2)
                 xs.append(x1 + pcb.rwidth)
@@ -1050,18 +1030,14 @@ class UI(Application):
             start = todo.index(pcb)
             end = start+1
         for i, p in enumerate(todo[start:end], start):
-            print("align_right", self.state.pcb.index(p)+1)
-            ax1, ay1, ax2, ay2 = p.nbbox
+            ax1, ay1, ax2, ay2 = p.bbox
             right = None
-            right_p = None
             for d in todo[:i]:
                 dist = p.directional_distance(d, (1, 0))
-                print(f" * {self.state.pcb.index(d)+1}. {d.ident}", dist)
-                if dist:
+                if dist is not None:
                     r = ax2 + dist
                     if right is None or r < right:
                         right = r
-                        right_p = d
 
             if pcb:
                 if right is None:
@@ -1070,11 +1046,11 @@ class UI(Application):
                     p.setRight(([x for x in xs if x > ax2 and x<=right] or [right])[0])
             else:
                 if right is None:
-                    print("-> right most")
                     # move objects behind together to prevent overlapping
                     offset = rightmost - ax2
-                    for o in todo[i:]:
-                        o.setRight(o.nbbox[2]+offset)
+                    for o in todo[i+1:]:
+                        if o.directional_distance(p, (1, 0)):
+                            o.setRight(o.bbox[2]+offset)
                     p.setRight(rightmost)
                 else:
                     p.setRight(min(
@@ -1156,7 +1132,6 @@ class UI(Application):
 
                 if not found:
                     for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
-                        x1, y1, x2, y2 = pcb.bbox
                         if pcb.contains(p):
                             found = True
                             if self.state.focus is pcb:
