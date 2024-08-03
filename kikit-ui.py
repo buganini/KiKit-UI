@@ -1300,13 +1300,19 @@ class UI(Application):
 
         for conflict in self.state.conflicts:
             try:
-                if hasattr(conflict, "exterior"):
+                if isinstance(conflict, Polygon):
                     coords = conflict.exterior.coords
                     self.drawPolygon(canvas, coords, fill=0xFF0000)
-                else:
+                elif isinstance(conflict, LineString):
                     coords = conflict.coords
                     for i in range(1, len(coords)):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
+                elif isinstance(conflict, MultiPolygon):
+                    for p in conflict.geoms:
+                        coords = p.exterior.coords
+                        self.drawPolygon(canvas, coords, fill=0xFF0000)
+                else:
+                    print("Unhandled conflict type", conflict)
             except:
                 traceback.print_exc()
 
