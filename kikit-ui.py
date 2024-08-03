@@ -273,6 +273,7 @@ class UI(Application):
 
         self.state = State()
         self.state.debug = False
+        self.state.show_conflicts = True
         self.state.show_mb = True
         self.state.show_vc = True
 
@@ -1273,23 +1274,24 @@ class UI(Application):
         for hole in self.state.holes:
             self.drawPolygon(canvas, hole.polygon.exterior.coords, stroke=0xFFCF55 if hole is self.state.focus else 0xFF6E00)
 
-        for conflict in self.state.conflicts:
-            try:
-                if isinstance(conflict, Polygon):
-                    coords = conflict.exterior.coords
-                    self.drawPolygon(canvas, coords, fill=0xFF0000)
-                elif isinstance(conflict, LineString):
-                    coords = conflict.coords
-                    for i in range(1, len(coords)):
-                        self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
-                elif isinstance(conflict, MultiPolygon):
-                    for p in conflict.geoms:
-                        coords = p.exterior.coords
+        if self.state.show_conflicts:
+            for conflict in self.state.conflicts:
+                try:
+                    if isinstance(conflict, Polygon):
+                        coords = conflict.exterior.coords
                         self.drawPolygon(canvas, coords, fill=0xFF0000)
-                else:
-                    print("Unhandled conflict type", conflict)
-            except:
-                traceback.print_exc()
+                    elif isinstance(conflict, LineString):
+                        coords = conflict.coords
+                        for i in range(1, len(coords)):
+                            self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
+                    elif isinstance(conflict, MultiPolygon):
+                        for p in conflict.geoms:
+                            coords = p.exterior.coords
+                            self.drawPolygon(canvas, coords, fill=0xFF0000)
+                    else:
+                        print("Unhandled conflict type", conflict)
+                except:
+                    traceback.print_exc()
 
         if not self.mousehold or not self.mousemoved or not self.mouse_dragging:
             bites = self.state.bites
@@ -1370,6 +1372,8 @@ class UI(Application):
                         with HBox():
                             Checkbox("Display Mousebites", self.state("show_mb"))
                             Checkbox("Display V-Cut", self.state("show_vc"))
+                            Checkbox("Show Conflicts", self.state("show_conflicts")).click(self.build)
+                            Spacer()
                             Checkbox("Debug", self.state("debug")).click(self.build)
 
                         if self.state.pcb:
