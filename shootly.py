@@ -89,11 +89,15 @@ def collision(origin, obj, direction):
     skip line strings to avoid false positive on sliding objects,
     but this brings false negative to aligned objects,
     so interpolate mid-point on edges to detect collision between two aligned objects
+
+    bug: cannot handle point-in-line-out for line-in-point-out
     """
 
     # forward tests with origin's vertices
     for a in interpolate(exterior(origin), 2):
         ps = shoot(a, obj, direction)
+        if len(ps)==1 and isinstance(ps[0], Point): # contact on a point
+            ps = []
         ps = [p for p in ps if not isinstance(p, LineString)]
         if ps:
             dist = a.distance(ps[0])
@@ -104,6 +108,8 @@ def collision(origin, obj, direction):
     rdirection = (-direction[0], -direction[1])
     for b in interpolate(exterior(obj), 2):
         ps = shoot(b, origin, rdirection)
+        if len(ps)==1 and isinstance(ps[0], Point): # contact on a point
+            ps = []
         ps = [p for p in ps if not isinstance(p, LineString)]
         if ps:
             dist = b.distance(ps[0])
