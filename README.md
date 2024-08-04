@@ -71,4 +71,3 @@ In the image below with debug mode on, small red dots are tab position candidate
 
 # ToDo
 * Manual tabbing
-* Arbitrary rotation
