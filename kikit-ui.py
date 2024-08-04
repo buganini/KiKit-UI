@@ -783,6 +783,17 @@ class UI(Application):
 
         conflicts = []
         shapes = [shapely.union_all(p.shapes) for p in pcbs]
+        if self.state.use_frame:
+            out_of_frame = GeometryCollection(shapes).difference(
+                Polygon([
+                    (pos_x, pos_y),
+                    (pos_x+self.state.frame_width*self.unit, pos_y),
+                    (pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit),
+                    (pos_x, pos_y+self.state.frame_height*self.unit),
+                ])
+            )
+            if not out_of_frame.is_empty:
+                conflicts.append(out_of_frame)
         if frame_top_polygon:
             shapes.append(frame_top_polygon)
         if frame_bottom_polygon:
