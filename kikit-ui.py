@@ -275,6 +275,7 @@ class UI(Application):
         self.unit = mm
 
         self.state = State()
+        self.state.hide_outside_reference_value = True
         self.state.debug = False
         self.state.show_conflicts = True
         self.state.show_mb = True
@@ -408,6 +409,7 @@ class UI(Application):
                 "rotate": pcb.rotate,
             })
         data = {
+            "hide_outside_reference_value": self.state.hide_outside_reference_value,
             "use_frame": self.state.use_frame,
             "tight": self.state.tight,
             "auto_tab": self.state.auto_tab,
@@ -443,6 +445,8 @@ class UI(Application):
 
         with open(target, "r") as f:
             data = json.load(f)
+            if "hide_outside_reference_value" in data:
+                self.state.hide_outside_reference_value = data["hide_outside_reference_value"]
             if "use_frame" in data:
                 self.state.use_frame = data["use_frame"]
             if "tight" in data:
@@ -603,6 +607,14 @@ class UI(Application):
                 rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate, pcbnew.DEGREES_T),
                 inheritDrc=False
             )
+            if self.state.hide_outside_reference_value:
+                for fp in panel.board.GetFootprints():
+                    ref = fp.Reference()
+                    if not pcb.contains(Point(ref.GetX(), ref.GetY())):
+                        ref.SetVisible(False)
+                    value = fp.Value()
+                    if not pcb.contains(Point(value.GetX(), value.GetY())):
+                        value.SetVisible(False)
 
         if self.state.tight:
             x1, y1, x2, y2 = pcbs[0].bbox
@@ -1383,6 +1395,12 @@ class UI(Application):
                             Button("Hole").click(self.addHole)
                             Spacer()
 
+                        Label("Export Options")
+                        with HBox():
+                            Checkbox("Hide Out-of-Board References/Values", self.state("hide_outside_reference_value"))
+                            Spacer()
+
+                        Label("Display Options")
                         with HBox():
                             Checkbox("Display Mousebites", self.state("show_mb"))
                             Checkbox("Display V-Cut", self.state("show_vc"))
@@ -1392,7 +1410,7 @@ class UI(Application):
 
                         if self.state.pcb:
                             with HBox():
-                                Label("Global")
+                                Label("Global Settings")
                                 Spacer()
                                 Label("Unit: mm")
 
