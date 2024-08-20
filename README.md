@@ -10,7 +10,7 @@ Make sure your python can import `pcbnew`
 ```
 On macOS, I have to use the python interpreter bundled with KiCAD
 ```
-PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9
+PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 ```
 
 Create a virtual environment and install dependencies
