@@ -67,6 +67,9 @@ class PCB(StateObject):
             name = os.path.join(folder, name)
         self.ident = name
 
+        self.off_x = 0
+        self.off_y = 0
+
         self.x = 0
         self.y = 0
         self.width = bbox[2] - bbox[0]
@@ -78,7 +81,7 @@ class PCB(StateObject):
         ret = []
         for shape in self._shapes:
             shape = affinity.rotate(shape, self.rotate*-1, origin=(0,0))
-            shape = transform(shape, lambda x: x+[self.x, self.y])
+            shape = transform(shape, lambda x: x+[self.x+self.off_x, self.y+self.off_y])
             ret.append(shape)
         return ret
 
@@ -93,14 +96,13 @@ class PCB(StateObject):
                 return True
         return False
 
-    def distance(self, obj, pos_x, pos_y):
+    def distance(self, obj):
         mdist = None
         if type(obj) is PCB:
             objs = obj.shapes
         else:
             objs = [obj]
         for shape, obj in itertools.product(self.shapes, objs):
-            shape = transform(shape, lambda x: x+[pos_x, pos_y])
             dist = distance(shape, obj)
             if mdist is None:
                 mdist = dist
@@ -178,13 +180,15 @@ class Hole(StateObject):
         super().__init__()
         polygon = Polygon(coords)
         b = polygon.bounds
+        self.off_x = 0
+        self.off_y = 0
         self.x = b[0]
         self.y = b[1]
         self._polygon = transform(polygon, lambda x: x-[self.x, self.y])
 
     @property
     def polygon(self):
-        return transform(self._polygon, lambda x: x+[self.x, self.y])
+        return transform(self._polygon, lambda x: x+[self.x+self.off_x, self.y+self.off_y])
 
     def contains(self, p):
         return self.polygon.contains(p)
@@ -273,6 +277,8 @@ class UI(Application):
         super().__init__()
 
         self.unit = mm
+        self.off_x = 20 * self.unit
+        self.off_y = 20 * self.unit
 
         self.state = State()
         self.state.hide_outside_reference_value = True
@@ -334,10 +340,10 @@ class UI(Application):
         x2, y2 = self.state.frame_width * self.unit, self.state.frame_height * self.unit
         for pcb in self.state.pcb:
             bbox = pcb.bbox
-            x1 = min(x1, bbox[0])
-            y1 = min(y1, bbox[1])
-            x2 = max(x2, bbox[2])
-            y2 = max(y2, bbox[3])
+            x1 = min(x1, bbox[0] - self.off_x)
+            y1 = min(y1, bbox[1] - self.off_y)
+            x2 = max(x2, bbox[2] - self.off_x)
+            y2 = max(y2, bbox[3] - self.off_y)
 
         dw = x2-x1
         dh = y2-y1
@@ -358,7 +364,8 @@ class UI(Application):
     def addPCB(self, e):
         boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
         if boardfile:
-            self._addPCB(PCB(boardfile))
+            p = PCB(boardfile)
+            self._addPCB(p)
 
     def _addPCB(self, pcb):
         if len(self.state.pcb) > 0:
@@ -366,6 +373,8 @@ class UI(Application):
             pcb.y = last.y + last.rheight + self.state.spacing * self.unit
         else:
             pcb.y = (self.state.frame_top + self.state.spacing if self.state.frame_top > 0 else 0) * self.unit
+        pcb.off_x = self.off_x
+        pcb.off_y = self.off_y
         self.state.pcb.append(pcb)
         self.autoScale()
         self.build()
@@ -429,7 +438,7 @@ class UI(Application):
             "frame_right": self.state.frame_right,
             "mill_fillets": self.state.mill_fillets,
             "pcb": pcbs,
-            "hole": [list(h.polygon.exterior.coords) for h in self.state.holes],
+            "hole": [list(transform(h.polygon.exterior, lambda p:p-(self.off_x, self.off_y)).coords) for h in self.state.holes],
         }
         with open(target, "w") as f:
             json.dump(data, f, indent=4)
@@ -485,7 +494,13 @@ class UI(Application):
             if "mill_fillets" in data:
                 self.state.mill_fillets = data["mill_fillets"]
             if "hole" in data:
-                self.state.holes = [Hole(h) for h in data["hole"]]
+                holes = []
+                for h in data["hole"]:
+                    hole = Hole(h)
+                    hole.off_x = self.off_x
+                    hole.off_y = self.off_y
+                    holes.append(hole)
+                self.state.holes = holes
 
             self.state.pcb = []
             for p in data.get("pcb", []):
@@ -493,6 +508,8 @@ class UI(Application):
                 if not os.path.isabs(file):
                     file = os.path.realpath(os.path.join(os.path.dirname(target), file))
                 pcb = PCB(file)
+                pcb.off_x = self.off_x
+                pcb.off_y = self.off_y
                 pcb.x = p["x"]
                 pcb.y = p["y"]
                 pcb.rotate = p["rotate"]
@@ -524,13 +541,6 @@ class UI(Application):
                 export += PCB_SUFFIX
             self.state.export_path = export
 
-        pos_x = 0
-        pos_y = 0
-
-        if export:
-            pos_x = 20 * self.unit
-            pos_y = 20 * self.unit
-
         panel = panelize.Panel(self.state.export_path)
         panel.vCutSettings.layer = {
             "Edge.Cuts": Layer.Edge_Cuts,
@@ -540,40 +550,40 @@ class UI(Application):
 
         if self.state.use_frame and self.state.frame_top > 0:
             frame_top_polygon = Polygon([
-                [pos_x, pos_y],
-                [pos_x+self.state.frame_width*self.unit, pos_y],
-                [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_top*self.unit],
-                [pos_x, pos_y+self.state.frame_top*self.unit],
+                [self.off_x, self.off_y],
+                [self.off_x+self.state.frame_width*self.unit, self.off_y],
+                [self.off_x+self.state.frame_width*self.unit, self.off_y+self.state.frame_top*self.unit],
+                [self.off_x, self.off_y+self.state.frame_top*self.unit],
             ])
         else:
             frame_top_polygon = None
 
         if self.state.use_frame and self.state.frame_bottom > 0:
             frame_bottom_polygon = Polygon([
-                [pos_x, pos_y+self.state.frame_height*self.unit],
-                [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit],
-                [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
-                [pos_x, pos_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
+                [self.off_x, self.off_y+self.state.frame_height*self.unit],
+                [self.off_x+self.state.frame_width*self.unit, self.off_y+self.state.frame_height*self.unit],
+                [self.off_x+self.state.frame_width*self.unit, self.off_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
+                [self.off_x, self.off_y+self.state.frame_height*self.unit-self.state.frame_bottom*self.unit],
             ])
         else:
             frame_bottom_polygon = None
 
         if self.state.use_frame and self.state.frame_left > 0:
             frame_left_polygon = Polygon([
-                [pos_x, pos_y],
-                [pos_x, pos_y+self.state.frame_height*self.unit],
-                [pos_x+self.state.frame_left*self.unit, pos_y+self.state.frame_height*self.unit],
-                [pos_x+self.state.frame_left*self.unit, pos_y],
+                [self.off_x, self.off_y],
+                [self.off_x, self.off_y+self.state.frame_height*self.unit],
+                [self.off_x+self.state.frame_left*self.unit, self.off_y+self.state.frame_height*self.unit],
+                [self.off_x+self.state.frame_left*self.unit, self.off_y],
             ])
         else:
             frame_left_polygon = None
 
         if self.state.use_frame and self.state.frame_right > 0:
             frame_right_polygon = Polygon([
-                [pos_x+self.state.frame_width*self.unit, pos_y],
-                [pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit],
-                [pos_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, pos_y+self.state.frame_height*self.unit],
-                [pos_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, pos_y],
+                [self.off_x+self.state.frame_width*self.unit, self.off_y],
+                [self.off_x+self.state.frame_width*self.unit, self.off_y+self.state.frame_height*self.unit],
+                [self.off_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, self.off_y+self.state.frame_height*self.unit],
+                [self.off_x+self.state.frame_width*self.unit-self.state.frame_right*self.unit, self.off_y],
             ])
         else:
             frame_right_polygon = None
@@ -604,7 +614,7 @@ class UI(Application):
         for pcb in pcbs:
             panel.appendBoard(
                 pcb.file,
-                pcbnew.VECTOR2I(round(pos_x + pcb.x), round(pos_y + pcb.y)),
+                pcbnew.VECTOR2I(round(pcb.off_x + pcb.x), round(pcb.off_y + pcb.y)),
                 origin=panelize.Origin.TopLeft,
                 tolerance=panelize.fromMm(1),
                 rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate, pcbnew.DEGREES_T),
@@ -621,23 +631,19 @@ class UI(Application):
 
         if self.state.tight:
             x1, y1, x2, y2 = pcbs[0].bbox
-            x1 += pos_x
-            y1 += pos_y
-            x2 += pos_x
-            y2 += pos_y
 
             if self.state.use_frame:
-                x1 = min(x1, pos_x)
-                y1 = min(y1, pos_y)
-                x2 = max(x2, pos_x + self.state.frame_width*self.unit)
-                y2 = max(y2, pos_y + self.state.frame_height*self.unit)
+                x1 = min(x1, self.off_x)
+                y1 = min(y1, self.off_y)
+                x2 = max(x2, self.off_x + self.state.frame_width*self.unit)
+                y2 = max(y2, self.off_y + self.state.frame_height*self.unit)
 
             for pcb in pcbs[1:]:
                 bbox = pcb.bbox
-                x1 = min(x1, pos_x+bbox[0])
-                y1 = min(y1, pos_y+bbox[1])
-                x2 = max(x2, pos_x+bbox[2])
-                y2 = max(y2, pos_y+bbox[3])
+                x1 = min(x1, bbox[0])
+                y1 = min(y1, bbox[1])
+                x2 = max(x2, bbox[2])
+                y2 = max(y2, bbox[3])
 
             # board hole
             frameBody = box(x1, y1, x2, y2)
@@ -645,7 +651,7 @@ class UI(Application):
                 frameBody = frameBody.difference(s.exterior().buffer(spacing*self.unit, join_style="mitre"))
 
             for hole in self.state.holes:
-                poly = transform(hole.polygon, lambda x: x+[pos_x, pos_y])
+                poly = hole.polygon
                 frameBody = frameBody.difference(poly)
 
             panel.appendSubstrate(frameBody)
@@ -690,7 +696,7 @@ class UI(Application):
                 if col_bboxes and y1 != min([b[0] for b in col_bboxes]):
                     n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
-                        p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y1 - spacing/2*self.unit)
+                        p = (x1 + (x2-x1)*i/n, y1 - spacing/2*self.unit)
                         partition = len([x for x in x_parts if x < p[0]])
                         tab_candidates.append((p, (0,1), partition, (x2-x1)/n))
 
@@ -698,7 +704,7 @@ class UI(Application):
                 if col_bboxes and y2 != max([b[1] for b in col_bboxes]):
                     n = math.ceil((x2-x1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
-                        p = (pos_x + x1 + (x2-x1)*i/n, pos_y + y2 + spacing/2*self.unit)
+                        p = (x1 + (x2-x1)*i/n, y2 + spacing/2*self.unit)
                         partition = len([x for x in x_parts if x < p[0]])
                         tab_candidates.append((p, (0,-1), partition, (x2-x1)/n))
 
@@ -706,7 +712,7 @@ class UI(Application):
                 if row_bboxes and x1 != min([b[0] for b in row_bboxes]):
                     n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
-                        p = (pos_x + x1 - spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
+                        p = (x1 - spacing/2*self.unit , y1 + (y2-y1)*i/n)
                         partition = len([y for y in y_parts if y < p[1]])
                         tab_candidates.append((p, (1,0), partition, (y2-y1)/n))
 
@@ -714,7 +720,7 @@ class UI(Application):
                 if row_bboxes and x2 != max([b[1] for b in row_bboxes]):
                     n = math.ceil((y2-y1) / (max_tab_spacing*self.unit))+1
                     for i in range(1,n):
-                        p = (pos_x + x2 + spacing/2*self.unit , pos_y + y1 + (y2-y1)*i/n)
+                        p = (x2 + spacing/2*self.unit , y1 + (y2-y1)*i/n)
                         partition = len([y for y in y_parts if y < p[1]])
                         tab_candidates.append((p, (-1,0), partition, (y2-y1)/n))
 
@@ -724,7 +730,7 @@ class UI(Application):
         for p, inward_direction, partition, score_divider in tab_candidates:
             skip = False
             for hole in self.state.holes:
-                shape = transform(hole.polygon, lambda x: x+[pos_x, pos_y])
+                shape = hole.polygon
                 if shape.contains(Point(*p)):
                     skip = True
                     break
@@ -778,7 +784,7 @@ class UI(Application):
                 ))
                 tab_substrates.append(tab[0])
                 for pcb in pcbs:
-                    dist = pcb.distance(tab[1], pos_x, pos_y)
+                    dist = pcb.distance(tab[1])
                     if dist == 0:
                         cuts.append(tab[1])
                         break
@@ -799,16 +805,18 @@ class UI(Application):
         conflicts = []
         shapes = [shapely.union_all(p.shapes) for p in pcbs]
         if self.state.use_frame:
-            out_of_frame = GeometryCollection(shapes).difference(
-                Polygon([
-                    (pos_x, pos_y),
-                    (pos_x+self.state.frame_width*self.unit, pos_y),
-                    (pos_x+self.state.frame_width*self.unit, pos_y+self.state.frame_height*self.unit),
-                    (pos_x, pos_y+self.state.frame_height*self.unit),
-                ])
-            )
-            if not out_of_frame.is_empty:
-                conflicts.append(out_of_frame)
+            frame = Polygon([
+                (self.off_x, self.off_y),
+                (self.off_x+self.state.frame_width*self.unit, self.off_y),
+                (self.off_x+self.state.frame_width*self.unit, self.off_y+self.state.frame_height*self.unit),
+                (self.off_x, self.off_y+self.state.frame_height*self.unit),
+            ])
+            try:
+                out_of_frame = GeometryCollection(shapes).difference(frame)
+                if not out_of_frame.is_empty:
+                    conflicts.append(out_of_frame)
+            except:
+                pass
         if frame_top_polygon:
             shapes.append(frame_top_polygon)
         if frame_bottom_polygon:
@@ -853,7 +861,7 @@ class UI(Application):
                     vc_ok = True
                     for pcb in pcbs:
                         x1, y1, x2, y2 = pcb.bbox
-                        if pos_x+x1 < p1[0] and p1[0] < pos_x+x2:
+                        if x1 < p1[0] and p1[0] < x2:
                             vc_ok = False
                             break
 
@@ -871,7 +879,7 @@ class UI(Application):
                     vc_ok = True
                     for pcb in pcbs:
                         x1, y1, x2, y2 = pcb.bbox
-                        if pos_y+y1 < p1[1] and p1[1] < pos_y+y2:
+                        if y1 < p1[1] and p1[1] < y2:
                             vc_ok = False
                             break
 
@@ -902,7 +910,7 @@ class UI(Application):
             return
         todo.sort(key=lambda pcb: pcb.bbox[1])
 
-        topmost = (self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * self.unit
+        topmost = (self.state.frame_top + (self.state.spacing if self.state.frame_top > 0 else 0)) * self.unit + self.off_y
         if pcb:
             ys = [topmost]
             for p in todo:
@@ -954,7 +962,7 @@ class UI(Application):
             return
         todo.sort(key=lambda pcb: -pcb.bbox[3])
 
-        bottommost = (self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * self.unit
+        bottommost = (self.state.frame_height - self.state.frame_bottom - (self.state.spacing if self.state.frame_bottom > 0 else 0)) * self.unit + self.off_y
         if pcb:
             ys = [bottommost]
             for p in todo:
@@ -1006,7 +1014,7 @@ class UI(Application):
             return
         todo.sort(key=lambda pcb: pcb.bbox[0])
 
-        leftmost = (self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * self.unit
+        leftmost = (self.state.frame_left + (self.state.spacing if self.state.frame_left > 0 else 0)) * self.unit + self.off_x
         if pcb:
             xs = [leftmost]
             for p in todo:
@@ -1058,7 +1066,7 @@ class UI(Application):
             return
         todo.sort(key=lambda pcb: -pcb.bbox[2])
 
-        rightmost = (self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * self.unit
+        rightmost = (self.state.frame_width - self.state.frame_right - (self.state.spacing if self.state.frame_right > 0 else 0)) * self.unit + self.off_x
         if pcb:
             xs = [rightmost]
             for p in todo:
@@ -1124,7 +1132,10 @@ class UI(Application):
             if len(polygon)>=2:
                 polygon.append(self.fromCanvas(e.x, e.y))
                 self.state.edit_polygon = []
-                self.state.holes.append(Hole(polygon))
+                h = Hole(polygon)
+                h.off_x = self.off_x
+                h.off_y = self.off_y
+                self.state.holes.append(h)
                 self.tool = Tool.END
                 self.build()
 
@@ -1139,19 +1150,13 @@ class UI(Application):
             x, y = self.fromCanvas(e.x, e.y)
             self.state.edit_polygon.append((x,y))
         else:
-            pcbs = self.state.pcb
             x, y = self.fromCanvas(e.x, e.y)
-            p = Point(x, y)
 
+            p = Point(x+self.off_x, y+self.off_y)
             self.mouse_dragging = None
             if self.state.focus and self.state.focus.contains(p):
                 self.mouse_dragging = self.state.focus
-            # if self.mouse_dragging is None:
-            #     for pcb in [pcb for pcb in pcbs if pcb is not self.state.focus]:
-            #         x1, y1, x2, y2 = pcb.bbox
-            #         if Polygon([(x1,y1), (x2,y1), (x2,y2), (x1,y2), (x1,y1)]).contains(p):
-            #             self.mouse_dragging = pcb
-            #             break
+
 
     def mouseup(self, e):
         self.mousehold = False
@@ -1164,7 +1169,7 @@ class UI(Application):
                 found = False
                 pcbs = self.state.pcb
                 x, y = self.fromCanvas(e.x, e.y)
-                p = Point(x, y)
+                p = Point(x+self.off_x, y+self.off_y)
 
                 for hole in self.state.holes:
                     if hole.polygon.contains(p):
@@ -1184,7 +1189,8 @@ class UI(Application):
                                 self.state.focus = pcb
                 if not found:
                     self.state.focus = None
-            self.build()
+            else:
+                self.build()
 
     def mousemove(self, e):
         if self.tool == Tool.TAB or self.tool == Tool.HOLE:
@@ -1234,7 +1240,7 @@ class UI(Application):
     def drawPCB(self, canvas, index, pcb, highlight):
         fill = 0x225522 if highlight else 0x112211
         for shape in pcb.shapes:
-            self.drawPolygon(canvas, shape.exterior.coords, fill=fill)
+            self.drawPolygon(canvas, transform(shape.exterior, lambda p:p-(self.off_x, self.off_y)).coords, fill=fill)
 
         p = affinity.rotate(Point(10, 10), pcb.rotate*-1, origin=(0,0))
         x, y = self.toCanvas(pcb.x+p.x, pcb.y+p.y)
@@ -1258,13 +1264,13 @@ class UI(Application):
         canvas.drawPolygon(ps, stroke=stroke, fill=fill)
 
     def drawVCutV(self, canvas, x):
-        x1, y1 = self.toCanvas(x, -VC_EXTENT*self.unit)
-        x2, y2 = self.toCanvas(x, (self.state.frame_height+VC_EXTENT)*self.unit)
+        x1, y1 = self.toCanvas(x-self.off_x, -VC_EXTENT*self.unit)
+        x2, y2 = self.toCanvas(x-self.off_x, (self.state.frame_height+VC_EXTENT)*self.unit)
         canvas.drawLine(x1, y1, x2, y2, color=0x4396E2)
 
     def drawVCutH(self, canvas, y):
-        x1, y1 = self.toCanvas(-VC_EXTENT*self.unit, y)
-        x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*self.unit, y)
+        x1, y1 = self.toCanvas(-VC_EXTENT*self.unit, y-self.off_y)
+        x2, y2 = self.toCanvas((self.state.frame_width+VC_EXTENT)*self.unit, y-self.off_y)
         canvas.drawLine(x1, y1, x2, y2, color=0x4396E2)
 
     def drawMousebites(self, canvas, line):
@@ -1274,7 +1280,7 @@ class UI(Application):
         i = 0
         while i * mb_spacing * self.unit <= line.length:
             p = line.interpolate(i * mb_spacing * self.unit)
-            x, y = self.toCanvas(p.x, p.y)
+            x, y = self.toCanvas(p.x-self.off_x, p.y-self.off_y)
             canvas.drawEllipse(x, y, mb_diameter*self.unit/2*scale, mb_diameter*self.unit/2*scale, stroke=0xFFFF00)
             i += 1
 
@@ -1282,16 +1288,19 @@ class UI(Application):
         offx, offy, scale = self.state.scale
         pcbs = self.state.pcb
 
+        # frame area
         if self.state.use_frame:
             x1, y1 = self.toCanvas(0, 0)
             x2, y2 = self.toCanvas(self.state.frame_width*self.unit, self.state.frame_height*self.unit)
             canvas.drawRect(x1, y1, x2, y2, fill=0x151515)
 
+        # pcb areas
         for i,pcb in enumerate(pcbs):
             if pcb is self.state.focus:
                 continue
             self.drawPCB(canvas, i, pcb, False)
 
+        # focus pcb
         for i,pcb in enumerate(pcbs):
             if pcb is not self.state.focus:
                 continue
@@ -1306,25 +1315,25 @@ class UI(Application):
             else:
                 geoms = []
             for polygon in geoms:
-                coords = polygon.exterior.coords
+                coords = transform(polygon.exterior, lambda p:p-(self.off_x, self.off_y)).coords
                 for i in range(1, len(coords)):
                     self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
                 for interior in polygon.interiors:
-                    coords = interior.coords
+                    coords = transform(interior, lambda p:p-(self.off_x, self.off_y)).coords
                     for i in range(1, len(coords)):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
 
         for hole in self.state.holes:
-            self.drawPolygon(canvas, hole.polygon.exterior.coords, stroke=0xFFCF55 if hole is self.state.focus else 0xFF6E00)
+            self.drawPolygon(canvas, transform(hole.polygon.exterior, lambda p:p-(self.off_x, self.off_y)).coords, stroke=0xFFCF55 if hole is self.state.focus else 0xFF6E00)
 
         if self.state.show_conflicts:
             for conflict in self.state.conflicts:
                 try:
                     if isinstance(conflict, Polygon):
-                        coords = conflict.exterior.coords
+                        coords = transform(conflict.exterior, lambda p:p-(self.off_x, self.off_y)).coords
                         self.drawPolygon(canvas, coords, fill=0xFF0000)
                     elif isinstance(conflict, LineString):
-                        coords = conflict.coords
+                        coords = transform(conflict, lambda p:p-(self.off_x, self.off_y)).coords
                         for i in range(1, len(coords)):
                             self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
                     elif isinstance(conflict, MultiPolygon):
@@ -1355,14 +1364,14 @@ class UI(Application):
 
             if self.state.debug:
                 for point, size in self.state.dbg_points:
-                    x, y = self.toCanvas(point[0], point[1])
+                    x, y = self.toCanvas(point[0]-self.off_x, point[1]-self.off_y)
                     canvas.drawEllipse(x, y, size, size, stroke=0xFF0000)
                 for rect in self.state.dbg_rects:
-                    x1, y1 = self.toCanvas(rect[0], rect[1])
-                    x2, y2 = self.toCanvas(rect[2], rect[3])
+                    x1, y1 = self.toCanvas(rect[0]-self.off_x, rect[1]-self.off_y)
+                    x2, y2 = self.toCanvas(rect[2]-self.off_x, rect[3]-self.off_y)
                     canvas.drawRect(x1, y1, x2, y2, stroke=0xFF0000)
                 for text in self.state.dbg_text:
-                    x, y = self.toCanvas(text[0], text[1])
+                    x, y = self.toCanvas(text[0]-self.off_x, text[1]-self.off_y)
                     canvas.drawText(x, y, text[2])
 
         edit_polygon = self.state.edit_polygon
