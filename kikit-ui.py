@@ -306,7 +306,7 @@ class UI(Application):
         self.state.auto_tab = True
         self.state.spacing = 1.6
         self.state.max_tab_spacing = 50.0
-        self.state.cut_method = "auto"
+        self.state.cut_method = "vc_or_mb"
         self.state.mb_diameter = 0.6
         self.state.mb_spacing = round(0.3 + self.state.mb_diameter, 1)
         mb_count = 5
@@ -842,29 +842,43 @@ class UI(Application):
         elif cut_method == "vc":
             panel.makeVCuts(cuts)
             vcuts.extend(cuts)
-        elif cut_method == "auto":
+        elif cut_method == "vc_or_mb" or cut_method == "vc_and_mb":
             for line in cuts:
                 p1 = line.coords[0]
                 p2 = line.coords[-1]
                 if p1[0]==p2[0]: # vertical
+                    vc_ok = True
                     for pcb in pcbs:
                         x1, y1, x2, y2 = pcb.bbox
                         if pos_x+x1 < p1[0] and p1[0] < pos_x+x2:
-                            panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
-                            bites.append(line)
+                            vc_ok = False
                             break
-                    else:
+
+                    do_vc = vc_ok
+                    do_mb = not vc_ok or cut_method == "vc_and_mb"
+
+                    if do_mb:
+                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
+                        bites.append(line)
+                    if do_vc:
                         panel.makeVCuts([line])
                         vcuts.append(line)
 
                 elif p1[1]==p2[1]: # horizontal
+                    vc_ok = True
                     for pcb in pcbs:
                         x1, y1, x2, y2 = pcb.bbox
                         if pos_y+y1 < p1[1] and p1[1] < pos_y+y2:
-                            panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
-                            bites.append(line)
+                            vc_ok = False
                             break
-                    else:
+
+                    do_vc = vc_ok
+                    do_mb = not vc_ok or cut_method == "vc_and_mb"
+
+                    if do_mb:
+                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
+                        bites.append(line)
+                    if do_vc:
                         panel.makeVCuts([line])
                         vcuts.append(line)
 
@@ -1432,9 +1446,13 @@ class UI(Application):
 
                             with HBox():
                                 Label("Cut Method")
-                                RadioButton("Auto", "auto", self.state("cut_method")).click(self.build)
+                                RadioButton("V-Cuts or Mousebites", "vc_or_mb", self.state("cut_method")).click(self.build)
+                                RadioButton("V-Cuts and Mousebites", "vc_and_mb", self.state("cut_method")).click(self.build)
                                 RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
                                 # RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+
+
+                            with HBox():
                                 Label("V-Cut Layer")
                                 with ComboBox(editable=False, text_model=self.state("vc_layer")):
                                     ComboBoxItem("User.1")
