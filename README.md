@@ -1,6 +1,6 @@
 This project is built on top of [KiKit](https://github.com/yaqwsx/KiKit).
 
-Tested with KiCad 7.0.10 and KiKit 1.5.1
+Tested with KiCad 7.0.10/8.0.4 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e979115fc572deb480a768e291e6b` for arbitrary rotation)
 
 # Installation
 Make sure your python can import `pcbnew`
