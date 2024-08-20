@@ -749,7 +749,7 @@ class UI(Application):
                         ( # horizontal
                             abs(inward_direction[1]) == 1
                             and
-                            t[1] == p[1]
+                            abs(t[1] - p[1]) < spacing * self.unit
                             and
                             abs(t[0]-p[0]) < tab_dist
                         )
@@ -757,7 +757,7 @@ class UI(Application):
                         ( # vertical
                             abs(inward_direction[0]) == 1
                             and
-                            t[0] == p[0]
+                            abs(t[0] - p[0]) < spacing * self.unit
                             and
                             abs(t[1]-p[1]) < tab_dist
                         )
