@@ -48,7 +48,7 @@ Run
 # Substrate Hole
 ![Substrate Hole](screenshots/substrate_hole.gif)
 
-# Tight Frame + Auto Tab + Auto Cut
+# Tight Frame + Auto Tab + V-Cuts or Mousebites
 ![UI](screenshots/tight_frame_autotab_autocut.png)
 ## Output
 ![Output](screenshots/tight_frame_autotab_autocut_output.png)
