@@ -620,7 +620,7 @@ class UI(Application):
                 rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate, pcbnew.DEGREES_T),
                 inheritDrc=False
             )
-            if self.state.hide_outside_reference_value:
+            if self.state.hide_outside_reference_value and export:
                 for fp in panel.board.GetFootprints():
                     ref = fp.Reference()
                     if not pcb.contains(Point(ref.GetX(), ref.GetY())):
