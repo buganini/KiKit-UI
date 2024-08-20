@@ -409,6 +409,7 @@ class UI(Application):
                 "rotate": pcb.rotate,
             })
         data = {
+            "export_path": self.state.export_path,
             "hide_outside_reference_value": self.state.hide_outside_reference_value,
             "use_frame": self.state.use_frame,
             "tight": self.state.tight,
@@ -445,6 +446,8 @@ class UI(Application):
 
         with open(target, "r") as f:
             data = json.load(f)
+            if "export_path" in data:
+                self.state.export_path = data["export_path"]
             if "hide_outside_reference_value" in data:
                 self.state.hide_outside_reference_value = data["hide_outside_reference_value"]
             if "use_frame" in data:
