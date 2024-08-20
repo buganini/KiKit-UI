@@ -541,7 +541,7 @@ class UI(Application):
                 export += PCB_SUFFIX
             self.state.export_path = export
 
-        panel = panelize.Panel(self.state.export_path)
+        panel = panelize.Panel(self.state.export_path if export else "")
         panel.vCutSettings.layer = {
             "Edge.Cuts": Layer.Edge_Cuts,
             "User.1": Layer.User_1,
