@@ -1,4 +1,4 @@
 KiKit>=1.6.0 # requires unreleased e19408a1ae5e979115fc572deb480a768e291e6b for arbitrary rotation
 shapely>=2.0.5
 PySide6
-QPUIQ==0.4
+QPUIQ==0.5
