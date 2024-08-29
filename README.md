@@ -39,6 +39,9 @@ Run
 ./env/bin/python3 kikit-ui.py a.kikit_pnl out.kicad_pcb
 ```
 
+# First PCBA (Mousebites)
+![First PCBA](screenshots/pcba.jpg)
+
 # Global Aligment
 ![Global Alignment](screenshots/global_alignment.gif)
 
