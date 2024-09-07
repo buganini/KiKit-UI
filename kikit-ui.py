@@ -19,6 +19,8 @@ from shootly import *
 from PUI.PySide6 import *
 import wx
 
+VERSION = "2.0"
+
 VC_EXTENT = 3
 PNL_SUFFIX = ".kikit_pnl"
 PCB_SUFFIX = ".kicad_pcb"
@@ -1388,7 +1390,7 @@ class UI(Application):
             canvas.drawLine(x, y-10, x, y+10, color=0xFF0000)
 
     def content(self):
-        with Window(size=(1300, 768), title="KiKit UI").keypress(self.keypress):
+        with Window(size=(1300, 768), title=f"KiKit UI v{VERSION}").keypress(self.keypress):
             with VBox():
                 with HBox():
                     self.state.pcb
