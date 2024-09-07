@@ -1387,7 +1387,7 @@ class UI(Application):
             canvas.drawLine(x, y-10, x, y+10, color=0xFF0000)
 
     def content(self):
-        with Window(size=(1300, 768)).keypress(self.keypress):
+        with Window(size=(1300, 768), title="KiKit UI").keypress(self.keypress):
             with VBox():
                 with HBox():
                     self.state.pcb
