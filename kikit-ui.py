@@ -17,6 +17,7 @@ import json
 import itertools
 from shootly import *
 from PUI.PySide6 import *
+import wx
 
 VC_EXTENT = 3
 PNL_SUFFIX = ".kikit_pnl"
@@ -1557,6 +1558,8 @@ class UI(Application):
                         Spacer()
 
                         Label(f"Conflicts: {len(self.state.conflicts)}")
+
+wx_app = wx.App()
 
 ui = UI()
 
