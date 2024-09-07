@@ -1244,7 +1244,7 @@ class UI(Application):
 
         p = affinity.rotate(Point(10, 10), pcb.rotate*-1, origin=(0,0))
         x, y = self.toCanvas(pcb.x+p.x, pcb.y+p.y)
-        canvas.drawText(x, y, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1)
+        canvas.drawText(x, y, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1, color=0xFFFFFF)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
         x1, y1 = self.toCanvas(x1, y1)
