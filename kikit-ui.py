@@ -396,7 +396,7 @@ class UI(Application):
 
     def save(self, e, target=None):
         if target is None:
-            target = SaveFile(self.state.target_path, "KiKit Panelization (*.kikit_pnl)")
+            target = SaveFile(self.state.target_path, types="KiKit Panelization (*.kikit_pnl)")
         if not target:
             return
 
@@ -449,7 +449,7 @@ class UI(Application):
 
     def load(self, e, target=None):
         if target is None:
-            target = OpenFile("Load Panelization", "KiKit Panelization (*.kikit_pnl)")
+            target = OpenFile("Load Panelization", types="KiKit Panelization (*.kikit_pnl)")
         if target:
             target = os.path.realpath(target)
             self.state.target_path = target
