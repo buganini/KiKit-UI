@@ -7,7 +7,7 @@ Tested with KiCad 7.0.10/8.0 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e9
 # Features
 * Interactive arrangement
 * Freeform arrangement, not limited to M×N configuration
-* Multiple PCB panelization
+* Multiple different PCB panelization
 * Auto tab creation
 * Auto V-cut/mousebites selection
 * Enable hole creation in panel substrate for extruded parts
