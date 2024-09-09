@@ -6,16 +6,14 @@ create_dmg = False
 
 args = []
 if platform.system()=="Darwin":
-    args.append("--onefile")
     args.extend(["--add-binary", f"/Applications/KiCad/KiCad.app/Contents/Frameworks/*.dylib:."])
     create_dmg = True
-else:
-    args.append("--onedir")
 
 print("Args", args)
 
 PyInstaller.__main__.run([
     'kikit-ui.py',
+    "--onedir",
     '--noconfirm',
     '--windowed',
     *args
