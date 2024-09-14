@@ -1,3 +1,9 @@
+import sys
+
+if getattr(sys, 'frozen', False):
+    import kikit.common
+    kikit.common.KIKIT_LIB = os.path.join(sys._MEIPASS, "kikit.pretty")
+
 from kikit import panelize, substrate
 from kikit.defs import Layer
 from kikit.units import mm, mil
@@ -12,7 +18,6 @@ import math
 from enum import Enum
 import traceback
 import os
-import sys
 import json
 import itertools
 from shootly import *
