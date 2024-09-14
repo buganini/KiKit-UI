@@ -1,4 +1,5 @@
 import sys
+import os
 
 if getattr(sys, 'frozen', False):
     import kikit.common
@@ -17,7 +18,6 @@ import pcbnew
 import math
 from enum import Enum
 import traceback
-import os
 import json
 import itertools
 from shootly import *

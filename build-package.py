@@ -13,7 +13,9 @@ if platform.system()=="Darwin":
     args.extend(["--add-binary", f"/Applications/KiCad/KiCad.app/Contents/Frameworks/*.dylib:."])
     create_dmg = True
 
-args.extend(["--add-binary", f"{kikit_base}/resources/kikit.pretty:."])
+args.extend(["--add-data", f"{os.path.join(kikit_base, 'resources', 'kikit.pretty')}:kikit.pretty"])
+
+print(args)
 
 PyInstaller.__main__.run([
     'kikit-ui.py',
