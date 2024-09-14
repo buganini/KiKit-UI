@@ -365,7 +365,7 @@ class UI(Application):
         self.state.scale = (offx, offy, scale)
 
     def addPCB(self, e):
-        boardfile = OpenFile("Open PCB", "KiCad PCB (*.kicad_pcb)")
+        boardfile = OpenFile("Open PCB", types="KiCad PCB (*.kicad_pcb)")
         if boardfile:
             p = PCB(boardfile)
             self._addPCB(p)
