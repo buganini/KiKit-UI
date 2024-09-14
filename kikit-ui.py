@@ -328,6 +328,7 @@ class UI(Application):
         self.state.frame_left = 0
         self.state.frame_right = 0
         self.state.mill_fillets = 0.5
+        self.state.export_mill_fillets = False
 
         self.state.boardSubstrate = None
 
@@ -440,6 +441,7 @@ class UI(Application):
             "frame_left": self.state.frame_left,
             "frame_right": self.state.frame_right,
             "mill_fillets": self.state.mill_fillets,
+            "export_mill_fillets": self.state.export_mill_fillets,
             "pcb": pcbs,
             "hole": [list(transform(h.polygon.exterior, lambda p:p-(self.off_x, self.off_y)).coords) for h in self.state.holes],
         }
@@ -496,6 +498,8 @@ class UI(Application):
                 self.state.frame_right = data["frame_right"]
             if "mill_fillets" in data:
                 self.state.mill_fillets = data["mill_fillets"]
+            if "export_mill_fillets" in data:
+                self.state.export_mill_fillets = data["export_mill_fillets"]
             if "hole" in data:
                 holes = []
                 for h in data["hole"]:
@@ -839,8 +843,10 @@ class UI(Application):
             for s in shapes:
                 dbg_rects.append(s.bounds)
 
-        if not export:
+        if not export or self.state.export_mill_fillets:
             panel.addMillFillets(self.state.mill_fillets*self.unit)
+
+        if not export:
             self.state.conflicts = conflicts
             self.state.dbg_points = dbg_points
             self.state.dbg_rects = dbg_rects
@@ -1456,8 +1462,11 @@ class UI(Application):
                                 TextField(self.state("spacing")).change(self.build)
                                 Label("Tab Width")
                                 TextField(self.state("tab_width")).change(self.build)
+
+                            with HBox():
                                 Label("Simulate Mill Fillets")
                                 TextField(self.state("mill_fillets")).change(self.build)
+                                Checkbox("Export Simulated Mill Fillets", self.state("export_mill_fillets"))
 
                             with HBox():
                                 Label("Cut Method")
