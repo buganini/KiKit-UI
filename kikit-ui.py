@@ -1254,7 +1254,7 @@ class UI(Application):
     def drawPCB(self, canvas, index, pcb, highlight):
         fill = 0x225522 if highlight else 0x112211
         for shape in pcb.shapes:
-            self.drawPolygon(canvas, transform(shape.exterior, lambda p:p-(self.off_x, self.off_y)).coords, fill=fill)
+            self.drawShapely(canvas, transform(shape, lambda p:p-(self.off_x, self.off_y)), fill=fill)
 
         p = affinity.rotate(Point(10, 10), pcb.rotate*-1, origin=(0,0))
         x, y = self.toCanvas(pcb.x+p.x, pcb.y+p.y)
@@ -1276,6 +1276,11 @@ class UI(Application):
         for p in polygon:
             ps.append(self.toCanvas(*p))
         canvas.drawPolygon(ps, stroke=stroke, fill=fill)
+
+    def drawShapely(self, canvas, shape, stroke=None, fill=None):
+        offx, offy, scale = self.state.scale
+        shape = transform(shape, lambda p:p * scale + (offx, offy))
+        canvas.drawShapely(shape, stroke=stroke, fill=fill)
 
     def drawVCutV(self, canvas, x):
         x1, y1 = self.toCanvas(x-self.off_x, -VC_EXTENT*self.unit)
