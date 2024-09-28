@@ -1454,6 +1454,8 @@ class UI(Application):
                             Checkbox("Debug", self.state("debug")).click(self.build)
 
                         if self.state.pcb:
+                            Divider()
+
                             with HBox():
                                 Label("Global Settings")
                                 Spacer()
@@ -1528,6 +1530,7 @@ class UI(Application):
                                 Button("⇥").click(self.align_right)
 
                             if isinstance(self.state.focus, PCB):
+                                Divider()
 
                                 with HBox():
                                     Label(f"Selected PCB: {self.state.pcb.index(self.state.focus)+1}. {self.state.focus.ident}")
