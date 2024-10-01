@@ -43,6 +43,15 @@ class Direction(Enum):
     Left = 2
     Right = 3
 
+def extrapolate(x1, y1, x2, y2, r, d):
+    dx = x2 - x1
+    dy = y2 - y1
+    n = math.sqrt(dx*dx + dy*dy)
+    if n == 0:
+        return x1, y1
+    l = n*r + d
+    return x1 + dx*l/n, y1 + dy*l/n
+
 class PCB(StateObject):
     def __init__(self, boardfile):
         super().__init__()
@@ -297,17 +306,9 @@ def autotab(boardSubstrate, origin, direction, width,
             maxHeight=pcbnew.FromMM(50), fillet=0):
     tabs = autotabs(boardSubstrate, origin, direction, width, maxHeight, fillet)
     if tabs:
-        if direction[0]==0: # vertical
-            if direction[1] < 0: # up
-                tabs.sort(key=lambda t: -t[0].bounds[1])
-            elif direction[1] > 0: # down
-                tabs.sort(key=lambda t: t[0].bounds[3])
-        elif direction[1]==0: # horizontal
-            if direction[0] < 0: # left
-                tabs.sort(key=lambda t: -t[0].bounds[0])
-            elif direction[0] > 0: # right
-                tabs.sort(key=lambda t: t[0].bounds[2])
-        return tabs[0]
+        tabs = [(tab[0].area, tab) for tab in tabs]
+        tabs.sort(key=lambda t: t[0])
+        return tabs[0][1]
     return None
 
 class UI(Application):
@@ -707,6 +708,31 @@ class UI(Application):
         tabs = []
         cuts = []
 
+        tab_substrates = []
+
+        # manual tab
+        for pcb in pcbs:
+            for x1, y1, x2, y2 in pcb.tabs():
+                tx, ty = extrapolate(x1, y1, x2, y2, 1, spacing/2*self.unit)
+
+                # outward
+                tab = autotab(panel.boardSubstrate, (tx, ty), normalize((tx-x1, ty-y2)), tab_width*self.unit)
+                if tab:
+                    tab_substrates.append(tab[0])
+                    for pcb in pcbs:
+                        dist = pcb.distance(tab[1])
+                        if dist == 0:
+                            cuts.append(tab[1])
+                            break
+
+                    # inward
+                    tab = autotab(panel.boardSubstrate, (tx, ty), normalize((x2-tx, y2-ty)), tab_width*self.unit)
+                    if tab: # tab, tabface
+                        tab_substrates.append(tab[0])
+                        cuts.append(tab[1])
+
+        # auto tab
+
         # (x, y), inward_direction, score_divider
         tab_candidates = []
 
@@ -789,7 +815,6 @@ class UI(Application):
             dbg_points.append((p, 1))
         tab_candidates = filtered_cands
 
-        tab_substrates = []
         # x, y, abs(direction)
         tabs = []
         tab_dist = max_tab_spacing*self.unit/3
@@ -1309,6 +1334,7 @@ class UI(Application):
         canvas.drawText(x, y, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1, color=0xFFFFFF)
 
         for x1, y1, x2, y2 in pcb.tabs():
+            x2, y2 = extrapolate(x1, y1, x2, y2, 1, self.state.spacing/2*self.unit)
             x1, y1 = self.toCanvas(x1-self.off_x, y1-self.off_y)
             x2, y2 = self.toCanvas(x2-self.off_x, y2-self.off_y)
             canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
@@ -1471,6 +1497,7 @@ class UI(Application):
                 if shortest:
                     t0 = shortest.coords[0]
                     t1 = shortest.coords[1]
+                    x2, y2 = extrapolate(x1, y1, x2, y2, 1, self.state.spacing/2*self.unit)
                     x1, y1 = self.toCanvas(t0[0]-self.off_x, t0[1]-self.off_y)
                     x2, y2 = self.toCanvas(t1[0]-self.off_x, t1[1]-self.off_y)
                     canvas.drawEllipse(x2, y2, 3, 3, stroke=0xFF0000)
