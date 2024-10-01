@@ -83,14 +83,29 @@ class PCB(StateObject):
         self.width = bbox[2] - bbox[0]
         self.height = bbox[3] - bbox[1]
         self.rotate = 0
+        self._tabs = []
 
     @property
     def shapes(self):
+        """
+        Return shapes in global coordinate system
+        """
         ret = []
         for shape in self._shapes:
             shape = affinity.rotate(shape, self.rotate*-1, origin=(0,0))
             shape = transform(shape, lambda x: x+[self.x+self.off_x, self.y+self.off_y])
             ret.append(shape)
+        return ret
+
+    def tabs(self):
+        """
+        Return tab anchors in global coordinate system
+        """
+        ret = []
+        for tab in self._tabs:
+            tab = affinity.rotate(Point(*tab), self.rotate*-1, origin=(0,0))
+            tab = transform(tab, lambda x: x+[self.x+self.off_x, self.y+self.off_y])
+            ret.append((tab.x, tab.y))
         return ret
 
     def clone(self):
@@ -182,6 +197,10 @@ class PCB(StateObject):
     def bbox(self):
         p = MultiPolygon(self.shapes)
         return p.bounds
+
+    def addTab(self, x, y):
+        p = affinity.rotate(Point(x - self.x - self.off_x, y - self.y - self.off_y), self.rotate*1, origin=(0,0))
+        self._tabs.append((p.x, p.y))
 
 class Hole(StateObject):
     def __init__(self, coords):
@@ -341,7 +360,6 @@ class UI(Application):
         self.mouse_dragging = None
         self.mousehold = False
         self.tool = Tool.NONE
-        self.tool_args = None
         self.state.edit_polygon = None
 
     def autoScale(self):
@@ -1133,10 +1151,16 @@ class UI(Application):
             self.build()
 
     def toCanvas(self, x, y):
+        """
+        Convert global coordinate system to canvas coordinate system
+        """
         offx, offy, scale = self.state.scale
         return x * scale + offx, y * scale + offy
 
     def fromCanvas(self, x, y):
+        """
+        Convert canvas coordinate system to global coordinate system
+        """
         offx, offy, scale = self.state.scale
         return (x - offx)/scale, (y - offy)/scale
 
@@ -1174,7 +1198,12 @@ class UI(Application):
 
     def mouseup(self, e):
         self.mousehold = False
-        if self.tool == Tool.TAB or self.tool == Tool.HOLE:
+        if self.tool == Tool.TAB:
+            x, y = self.fromCanvas(e.x, e.y)
+            self.state.focus.addTab(x+self.off_x, y+self.off_y)
+            self.tool = Tool.NONE
+            self.build()
+        elif self.tool == Tool.HOLE:
             pass
         elif self.tool == Tool.END:
             self.tool = Tool.NONE
@@ -1247,9 +1276,8 @@ class UI(Application):
                 self.rotateBy(90)
                 self.build()
 
-    def add_tab(self, arg):
+    def add_tab(self, e):
         self.tool = Tool.TAB
-        self.tool_args = arg
 
     def drawPCB(self, canvas, index, pcb, highlight):
         fill = 0x225522 if highlight else 0x112211
@@ -1259,6 +1287,10 @@ class UI(Application):
         p = affinity.rotate(Point(10, 10), pcb.rotate*-1, origin=(0,0))
         x, y = self.toCanvas(pcb.x+p.x, pcb.y+p.y)
         canvas.drawText(x, y, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1, color=0xFFFFFF)
+
+        for t in pcb.tabs():
+            x, y = self.toCanvas(t[0]-self.off_x, t[1]-self.off_y)
+            canvas.drawEllipse(x, y, 3, 3, stroke=0xFF0000)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
         x1, y1 = self.toCanvas(x1, y1)
@@ -1400,7 +1432,29 @@ class UI(Application):
                 edit_polygon.append(self.fromCanvas(*self.mousepos))
             self.drawPolyline(canvas, edit_polygon, color=0xFF6E00, width=1)
 
-        if self.tool == Tool.TAB or self.tool == Tool.HOLE:
+        drawCross = False
+
+        if self.tool == Tool.HOLE:
+            drawCross = True
+
+        if self.tool == Tool.TAB:
+            x, y = self.fromCanvas(*self.mousepos)
+            p = Point(x+self.off_x, y+self.off_y)
+            if self.state.focus.contains(p):
+                shortest = None
+                for shape in self.state.focus.shapes:
+                    s = shapely.shortest_line(p, shape.exterior)
+                    if shortest is None or s.length < shortest.length:
+                        shortest = s
+                if shortest:
+                    t0 = shortest.coords[0]
+                    t1 = shortest.coords[1]
+                    x1, y1 = self.toCanvas(t0[0]-self.off_x, t0[1]-self.off_y)
+                    x2, y2 = self.toCanvas(t1[0]-self.off_x, t1[1]-self.off_y)
+                    canvas.drawEllipse(x1, y1, 3, 3, stroke=0xFF0000)
+                    canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+
+        if drawCross and self.mousepos:
             x, y = self.mousepos[0], self.mousepos[1]
             canvas.drawLine(x-10, y, x+10, y, color=0xFF0000)
             canvas.drawLine(x, y-10, x, y+10, color=0xFF0000)
@@ -1562,14 +1616,12 @@ class UI(Application):
                                         Spacer()
                                     r += 1
 
-                                    # Label("Add Tab").grid(row=r, column=0)
-                                    # with HBox().grid(row=r, column=1):
-                                    #     Button("↥").click(self.add_tab, Direction.Up)
-                                    #     Button("↧").click(self.add_tab, Direction.Down)
-                                    #     Button("↤").click(self.add_tab, Direction.Left)
-                                    #     Button("↦").click(self.add_tab, Direction.Right)
-                                    #     Spacer()
-                                    # r += 1
+                                    Label("Tabs").grid(row=r, column=0)
+                                    with HBox().grid(row=r, column=1):
+                                        Button("Add").click(self.add_tab)
+                                        Spacer()
+                                    r += 1
+
                             elif self.state.focus:
                                 with HBox():
                                     Label("Selected Hole")
