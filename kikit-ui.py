@@ -1497,9 +1497,11 @@ class UI(Application):
                 if shortest:
                     t0 = shortest.coords[0]
                     t1 = shortest.coords[1]
+                    x1, y1 = t0
+                    x2, y2 = t1
                     x2, y2 = extrapolate(x1, y1, x2, y2, 1, self.state.spacing/2*self.unit)
-                    x1, y1 = self.toCanvas(t0[0]-self.off_x, t0[1]-self.off_y)
-                    x2, y2 = self.toCanvas(t1[0]-self.off_x, t1[1]-self.off_y)
+                    x1, y1 = self.toCanvas(x1-self.off_x, y1-self.off_y)
+                    x2, y2 = self.toCanvas(x2-self.off_x, y2-self.off_y)
                     canvas.drawEllipse(x2, y2, 3, 3, stroke=0xFF0000)
                     canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
 
