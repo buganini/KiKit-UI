@@ -1,4 +1,6 @@
 {
+    "export_path": "",
+    "hide_outside_reference_value": true,
     "use_frame": true,
     "tight": true,
     "auto_tab": true,
@@ -16,65 +18,91 @@
     "frame_left": 0,
     "frame_right": 0,
     "mill_fillets": 0.5,
+    "export_mill_fillets": false,
     "pcb": [
         {
             "file": "../resources/50x18.kicad_pcb",
             "x": -7813601.0,
             "y": 47491874.0,
-            "rotate": 90
+            "rotate": 90,
+            "disable_auto_tab": false,
+            "tabs": []
         },
         {
             "file": "../resources/25x12.kicad_pcb",
             "x": 10481944.0,
             "y": 101669894.0,
-            "rotate": 90
+            "rotate": 90,
+            "disable_auto_tab": false,
+            "tabs": []
         },
         {
             "file": "../resources/50x18.kicad_pcb",
             "x": 16021509,
             "y": 57450015.0,
-            "rotate": 90
+            "rotate": 90,
+            "disable_auto_tab": true,
+            "tabs": []
         },
         {
             "file": "../resources/50x18.kicad_pcb",
             "x": 65099980,
             "y": 60750014.0,
-            "rotate": 90
+            "rotate": 90,
+            "disable_auto_tab": false,
+            "tabs": [
+                [
+                    11694357.625,
+                    11846454.416666657
+                ],
+                [
+                    34132097.45833333,
+                    3529016.375
+                ]
+            ]
         },
         {
             "file": "../resources/50x18.kicad_pcb",
             "x": 90243674,
             "y": 61487438.0,
-            "rotate": 90
+            "rotate": 90,
+            "disable_auto_tab": false,
+            "tabs": []
         },
         {
             "file": "../resources/25x12.kicad_pcb",
             "x": 47999175,
             "y": 103168364.0,
-            "rotate": 90
+            "rotate": 90,
+            "disable_auto_tab": false,
+            "tabs": []
         },
         {
             "file": "../resources/25x12.kicad_pcb",
             "x": 67046989,
             "y": 101651892.0,
-            "rotate": 90
+            "rotate": 90,
+            "disable_auto_tab": false,
+            "tabs": []
         },
         {
             "file": "../resources/25x12.kicad_pcb",
             "x": 92555110,
             "y": 106235322.0,
-            "rotate": 90
+            "rotate": 90,
+            "disable_auto_tab": false,
+            "tabs": []
         }
     ],
     "hole": [
         [
             [
                 81002349.37666667,
-                28582428.22666667
+                28582428.226666674
             ],
             [
                 95254433.11999999,
-                28582428.22666667
+                28582428.226666674
             ],
             [
                 95074026.99666665,
@@ -82,15 +110,15 @@
             ],
             [
                 80280724.88333333,
-                42834511.970000006
+                42834511.97000001
             ],
             [
                 80280724.88333333,
-                42834511.970000006
+                42834511.97000001
             ],
             [
                 81002349.37666667,
-                28582428.22666667
+                28582428.226666674
             ]
         ]
     ]

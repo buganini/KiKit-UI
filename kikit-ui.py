@@ -75,6 +75,8 @@ class PCB(StateObject):
             name = os.path.join(folder, name)
         self.ident = name
 
+        self.disable_auto_tab = False
+
         self.off_x = 0
         self.off_y = 0
 
@@ -102,10 +104,19 @@ class PCB(StateObject):
         Return tab anchors in global coordinate system
         """
         ret = []
-        for tab in self._tabs:
-            tab = affinity.rotate(Point(*tab), self.rotate*-1, origin=(0,0))
-            tab = transform(tab, lambda x: x+[self.x+self.off_x, self.y+self.off_y])
-            ret.append((tab.x, tab.y))
+        for p in self._tabs:
+            p = affinity.rotate(Point(*p), self.rotate*-1, origin=(0,0))
+            p = transform(p, lambda x: x+[self.x+self.off_x, self.y+self.off_y])
+            shortest = None
+            for shape in self.shapes:
+                s = shapely.shortest_line(p, shape.exterior)
+                if shortest is None or s.length < shortest.length:
+                    shortest = s
+
+            if shortest:
+                t0 = shortest.coords[0]
+                t1 = shortest.coords[1]
+                ret.append((*t0, *t1))
         return ret
 
     def clone(self):
@@ -443,6 +454,8 @@ class UI(Application):
                 "x": pcb.x,
                 "y": pcb.y,
                 "rotate": pcb.rotate,
+                "disable_auto_tab": pcb.disable_auto_tab,
+                "tabs": pcb._tabs,
             })
         data = {
             "export_path": self.state.export_path,
@@ -543,6 +556,8 @@ class UI(Application):
                 pcb.x = p["x"]
                 pcb.y = p["y"]
                 pcb.rotate = p["rotate"]
+                pcb.disable_auto_tab = p.get("disable_auto_tab", False)
+                pcb._tabs = p.get("tabs", [])
                 self.state.pcb.append(pcb)
             self.autoScale()
             self.build()
@@ -704,6 +719,10 @@ class UI(Application):
 
         if self.state.auto_tab and max_tab_spacing > 0:
             for pcb in pcbs:
+                if pcb.disable_auto_tab:
+                    continue
+                if pcb.tabs():
+                    continue
                 bboxes = [p.bbox for p in pcbs if p is not pcb]
                 if self.state.use_frame:
                     if self.state.tight:
@@ -1200,7 +1219,8 @@ class UI(Application):
         self.mousehold = False
         if self.tool == Tool.TAB:
             x, y = self.fromCanvas(e.x, e.y)
-            self.state.focus.addTab(x+self.off_x, y+self.off_y)
+            if self.state.focus.contains(Point(x+self.off_x, y+self.off_y)):
+                self.state.focus.addTab(x+self.off_x, y+self.off_y)
             self.tool = Tool.NONE
             self.build()
         elif self.tool == Tool.HOLE:
@@ -1288,9 +1308,11 @@ class UI(Application):
         x, y = self.toCanvas(pcb.x+p.x, pcb.y+p.y)
         canvas.drawText(x, y, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1, color=0xFFFFFF)
 
-        for t in pcb.tabs():
-            x, y = self.toCanvas(t[0]-self.off_x, t[1]-self.off_y)
-            canvas.drawEllipse(x, y, 3, 3, stroke=0xFF0000)
+        for x1, y1, x2, y2 in pcb.tabs():
+            x1, y1 = self.toCanvas(x1-self.off_x, y1-self.off_y)
+            x2, y2 = self.toCanvas(x2-self.off_x, y2-self.off_y)
+            canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+            canvas.drawEllipse(x2, y2, 3, 3, stroke=0xFF0000)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
         x1, y1 = self.toCanvas(x1, y1)
@@ -1451,7 +1473,7 @@ class UI(Application):
                     t1 = shortest.coords[1]
                     x1, y1 = self.toCanvas(t0[0]-self.off_x, t0[1]-self.off_y)
                     x2, y2 = self.toCanvas(t1[0]-self.off_x, t1[1]-self.off_y)
-                    canvas.drawEllipse(x1, y1, 3, 3, stroke=0xFF0000)
+                    canvas.drawEllipse(x2, y2, 3, 3, stroke=0xFF0000)
                     canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
 
         if drawCross and self.mousepos:
@@ -1619,6 +1641,8 @@ class UI(Application):
                                     Label("Tabs").grid(row=r, column=0)
                                     with HBox().grid(row=r, column=1):
                                         Button("Add").click(self.add_tab)
+                                        if not self.state.focus.tabs():
+                                            Checkbox("Disable auto tab", self.state.focus("disable_auto_tab")).click(self.build)
                                         Spacer()
                                     r += 1
 
