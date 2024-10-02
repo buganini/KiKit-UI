@@ -8,7 +8,7 @@ Tested with KiCad 7.0.10/8.0 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e9
 * Interactive arrangement, what you see is what you get
 * Freeform arrangement, not limited to M×N configuration
 * Multiple different PCB panelization
-* Auto tab creation
+* Auto/Manual tab creation
 * Auto V-cut/mousebites selection
 * Enable hole creation in panel substrate for extruded parts
 * Does not require coding skill
@@ -82,6 +82,3 @@ Tab position candidates are determined by the PCB edge and max_tab_spacing, prio
 
 In the image below with debug mode on, small red dots are tab position candidates, larger red circles are selected candidates, and the two rectangles represent the two half-bridge tabs.
 ![Auto Tab](screenshots/auto_tab_selection.png)
-
-# ToDo
-* Manual tabbing
