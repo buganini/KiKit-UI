@@ -274,34 +274,37 @@ def autotabs(boardSubstrate, origin, direction, width,
     direction = np.around(normalize(direction), 4)
     tabs = []
     for geom in listGeometries(boardSubstrate.substrates):
+        sideOriginA = origin + makePerpendicular(direction) * width / 2
+        sideOriginB = origin - makePerpendicular(direction) * width / 2
         try:
-            sideOriginA = origin + makePerpendicular(direction) * width / 2
-            sideOriginB = origin - makePerpendicular(direction) * width / 2
             boundary = geom.exterior
             splitPointA = closestIntersectionPoint(sideOriginA, direction,
                 boundary, maxHeight)
             splitPointB = closestIntersectionPoint(sideOriginB, direction,
                 boundary, maxHeight)
             tabFace = biteBoundary(boundary, splitPointB, splitPointA)
-            # There is nothing else to do, return the tab
+
             tab = Polygon(list(tabFace.coords) + [sideOriginA, sideOriginB])
             tabs.append(boardSubstrate._makeTabFillet(tab, tabFace, fillet))
+        except NoIntersectionError as e:
+            pass
+        except TabFilletError as e:
+            pass
 
-            for boundary in geom.interiors:
+        for boundary in geom.interiors:
+            try:
                 splitPointA = closestIntersectionPoint(sideOriginA, direction,
                     boundary, maxHeight)
                 splitPointB = closestIntersectionPoint(sideOriginB, direction,
                     boundary, maxHeight)
                 tabFace = biteBoundary(boundary, splitPointB, splitPointA)
-                # There is nothing else to do, return the tab
+
                 tab = Polygon(list(tabFace.coords) + [sideOriginA, sideOriginB])
                 tabs.append(boardSubstrate._makeTabFillet(tab, tabFace, fillet))
-
-
-        except NoIntersectionError as e:
-            continue
-        except TabFilletError as e:
-            continue
+            except NoIntersectionError as e:
+                pass
+            except TabFilletError as e:
+                pass
     return tabs
 
 def autotab(boardSubstrate, origin, direction, width,
@@ -718,7 +721,7 @@ class UI(Application):
                 tx, ty = extrapolate(x1, y1, x2, y2, 1, spacing/2*self.unit)
 
                 # outward
-                tab = autotab(panel.boardSubstrate, (tx, ty), normalize((tx-x1, ty-y2)), tab_width*self.unit)
+                tab = autotab(panel.boardSubstrate, (tx, ty), (tx-x1, ty-y2), tab_width*self.unit)
                 if tab:
                     tab_substrates.append(tab[0])
                     for pcb in pcbs:
@@ -728,7 +731,7 @@ class UI(Application):
                             break
 
                     # inward
-                    tab = autotab(panel.boardSubstrate, (tx, ty), normalize((x2-tx, y2-ty)), tab_width*self.unit)
+                    tab = autotab(panel.boardSubstrate, (tx, ty), (x2-tx, y2-ty), tab_width*self.unit)
                     if tab: # tab, tabface
                         tab_substrates.append(tab[0])
                         cuts.append(tab[1])
