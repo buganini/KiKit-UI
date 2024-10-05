@@ -343,6 +343,9 @@ class UI(Application):
         self.state.focus = None
         self.state.focus_tab = None
 
+        self.state.netRenamePattern = "Board_{n}-{orig}"
+        self.state.refRenamePattern = "Board_{n}-{orig}"
+
         self.state.vcuts = []
         self.state.bites = []
         self.state.dbg_points = []
@@ -493,6 +496,8 @@ class UI(Application):
             "frame_right": self.state.frame_right,
             "mill_fillets": self.state.mill_fillets,
             "export_mill_fillets": self.state.export_mill_fillets,
+            "netRenamePattern": self.state.netRenamePattern,
+            "refRenamePattern": self.state.refRenamePattern,
             "pcb": pcbs,
             "hole": [list(transform(h.polygon.exterior, lambda p:p-(self.off_x, self.off_y)).coords) for h in self.state.holes],
         }
@@ -551,6 +556,10 @@ class UI(Application):
                 self.state.mill_fillets = data["mill_fillets"]
             if "export_mill_fillets" in data:
                 self.state.export_mill_fillets = data["export_mill_fillets"]
+            if "netRenamePattern" in data:
+                self.state.netRenamePattern = data["netRenamePattern"]
+            if "refRenamePattern" in data:
+                self.state.refRenamePattern = data["refRenamePattern"]
             if "hole" in data:
                 holes = []
                 for h in data["hole"]:
@@ -678,7 +687,9 @@ class UI(Application):
                 origin=panelize.Origin.TopLeft,
                 tolerance=panelize.fromMm(1),
                 rotationAngle=pcbnew.EDA_ANGLE(pcb.rotate, pcbnew.DEGREES_T),
-                inheritDrc=False
+                inheritDrc=False,
+                netRenamer=self.netRenamer,
+                refRenamer=self.refRenamer
             )
             if self.state.hide_outside_reference_value and export:
                 for fp in panel.board.GetFootprints():
@@ -1346,7 +1357,7 @@ class UI(Application):
 
         p = affinity.rotate(Point(10, 10), pcb.rotate*-1, origin=(0,0))
         x, y = self.toCanvas(pcb.x+p.x, pcb.y+p.y)
-        canvas.drawText(x, y, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1, color=0xFFFFFF)
+        canvas.drawText(x, y, f"{index}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1, color=0xFFFFFF)
 
         for i, (x1, y1, x2, y2) in enumerate(pcb.tabs()):
             x2, y2 = extrapolate(x1, y1, x2, y2, 1, self.state.spacing/2*self.unit)
@@ -1529,6 +1540,18 @@ class UI(Application):
             canvas.drawLine(x-10, y, x+10, y, color=0xFF0000)
             canvas.drawLine(x, y-10, x, y+10, color=0xFF0000)
 
+    def netRenamer(self, n, orig):
+        try:
+            return self.state.netRenamePattern.format(n=n, orig=orig)
+        except:
+            return orig
+
+    def refRenamer(self, n, orig):
+        try:
+            return self.state.refRenamePattern.format(n=n, orig=orig)
+        except:
+            return orig
+
     def content(self):
         with Window(size=(1300, 768), title=f"KiKit UI v{VERSION}").keypress(self.keypress):
             with VBox():
@@ -1646,6 +1669,13 @@ class UI(Application):
                                 TextField(self.state("frame_right")).change(self.build)
 
                         with HBox():
+                            Label("Rename")
+                            Label("Net")
+                            TextField(self.state("netRenamePattern")).change(self.build)
+                            Label("Ref")
+                            TextField(self.state("refRenamePattern")).change(self.build)
+
+                        with HBox():
                             Label("Align")
                             Button("⤒").click(self.align_top)
                             Button("⤓").click(self.align_bottom)
@@ -1657,7 +1687,7 @@ class UI(Application):
                                 with VBox():
                                     if isinstance(self.state.focus, PCB):
                                         with HBox():
-                                            Label(f"Selected PCB: {self.state.pcb.index(self.state.focus)+1}. {self.state.focus.ident}")
+                                            Label(f"Selected PCB: {self.state.pcb.index(self.state.focus)}. {self.state.focus.ident}")
 
                                             Spacer()
 
