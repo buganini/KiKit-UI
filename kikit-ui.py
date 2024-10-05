@@ -341,6 +341,7 @@ class UI(Application):
         self.state.canvas_height = 800
 
         self.state.focus = None
+        self.state.focus_tab = None
 
         self.state.vcuts = []
         self.state.bites = []
@@ -433,6 +434,14 @@ class UI(Application):
         elif obj:
             self.state.holes = [h for h in self.state.holes if h is not obj]
         self.state.focus = None
+        self.build()
+
+    def highlight_tab(self, e, i):
+        self.state.focus_tab = i
+
+    def remove_tab(self, e, i):
+        self.state.focus._tabs.pop(i)
+        self.state.focus_tab = None
         self.build()
 
     def save(self, e, target=None):
@@ -1280,6 +1289,7 @@ class UI(Application):
                                 continue
                             else:
                                 self.state.focus = pcb
+                                self.state.focus_tab = None
                 if not found:
                     self.state.focus = None
             else:
@@ -1338,11 +1348,15 @@ class UI(Application):
         x, y = self.toCanvas(pcb.x+p.x, pcb.y+p.y)
         canvas.drawText(x, y, f"{index+1}. {pcb.ident}\n{pcb.width/self.unit:.2f}*{pcb.height/self.unit:.2f}", rotate=pcb.rotate*-1, color=0xFFFFFF)
 
-        for x1, y1, x2, y2 in pcb.tabs():
+        for i, (x1, y1, x2, y2) in enumerate(pcb.tabs()):
             x2, y2 = extrapolate(x1, y1, x2, y2, 1, self.state.spacing/2*self.unit)
             x1, y1 = self.toCanvas(x1-self.off_x, y1-self.off_y)
             x2, y2 = self.toCanvas(x2-self.off_x, y2-self.off_y)
-            canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00)
+            if i == self.state.focus_tab:
+                width = 3
+            else:
+                width = 1
+            canvas.drawLine(x1, y1, x2, y2, color=0xFFFF00, width=width)
             canvas.drawEllipse(x2, y2, 3, 3, stroke=0xFF0000)
 
     def drawLine(self, canvas, x1, y1, x2, y2, color):
@@ -1563,131 +1577,140 @@ class UI(Application):
                             Spacer()
                             Checkbox("Debug", self.state("debug")).click(self.build)
 
+                        Divider()
+
+                        with HBox():
+                            Label("Global Settings")
+                            Spacer()
+                            Label("Unit: mm")
+
+                        with HBox():
+                            Checkbox("Use Frame", self.state("use_frame")).click(self.build)
+                            Checkbox("Tight", self.state("tight")).click(self.build)
+                            Checkbox("Auto Tab", self.state("auto_tab")).click(self.build)
+                            Spacer()
+                            Label("Max Tab Spacing")
+                            TextField(self.state("max_tab_spacing")).layout(width=50).change(self.build)
+
+                        with HBox():
+                            Label("Spacing")
+                            TextField(self.state("spacing")).change(self.build)
+                            Label("Tab Width")
+                            TextField(self.state("tab_width")).change(self.build)
+
+                        with HBox():
+                            Label("Simulate Mill Fillets")
+                            TextField(self.state("mill_fillets")).change(self.build)
+                            Checkbox("Export Simulated Mill Fillets", self.state("export_mill_fillets"))
+
+                        with HBox():
+                            Label("Cut Method")
+                            RadioButton("V-Cuts or Mousebites", "vc_or_mb", self.state("cut_method")).click(self.build)
+                            RadioButton("V-Cuts and Mousebites", "vc_and_mb", self.state("cut_method")).click(self.build)
+                            RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
+                            # RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+
+
+                        with HBox():
+                            Label("V-Cut Layer")
+                            with ComboBox(editable=False, text_model=self.state("vc_layer")):
+                                ComboBoxItem("User.1")
+                                ComboBoxItem("Cmts.User")
+
+                            Spacer()
+                        with HBox():
+                            Label("Mousebites")
+                            Label("Spacing")
+                            TextField(self.state("mb_spacing")).change(self.build)
+                            Label("Diameter")
+                            TextField(self.state("mb_diameter")).change(self.build)
+                            Spacer()
+
+                        if self.state.use_frame:
+                            with HBox():
+                                Label("Frame Size")
+                                Label("Width")
+                                TextField(self.state("frame_width")).change(self.build)
+                                Label("Height")
+                                TextField(self.state("frame_height")).change(self.build)
+
+                            with HBox():
+                                Label("Frame Width")
+                                Label("Top")
+                                TextField(self.state("frame_top")).change(self.build)
+                                Label("Bottom")
+                                TextField(self.state("frame_bottom")).change(self.build)
+                                Label("Left")
+                                TextField(self.state("frame_left")).change(self.build)
+                                Label("Right")
+                                TextField(self.state("frame_right")).change(self.build)
+
+                        with HBox():
+                            Label("Align")
+                            Button("⤒").click(self.align_top)
+                            Button("⤓").click(self.align_bottom)
+                            Button("⇤").click(self.align_left)
+                            Button("⇥").click(self.align_right)
+
                         if self.state.pcb:
-                            Divider()
+                            with Scroll().layout(weight=1):
+                                with VBox():
+                                    if isinstance(self.state.focus, PCB):
+                                        with HBox():
+                                            Label(f"Selected PCB: {self.state.pcb.index(self.state.focus)+1}. {self.state.focus.ident}")
 
-                            with HBox():
-                                Label("Global Settings")
-                                Spacer()
-                                Label("Unit: mm")
+                                            Spacer()
 
-                            with HBox():
-                                Checkbox("Use Frame", self.state("use_frame")).click(self.build)
-                                Checkbox("Tight", self.state("tight")).click(self.build)
-                                Checkbox("Auto Tab", self.state("auto_tab")).click(self.build)
-                                Spacer()
-                                Label("Max Tab Spacing")
-                                TextField(self.state("max_tab_spacing")).layout(width=50).change(self.build)
+                                            Button("Duplicate").click(self.duplicate, self.state.focus)
+                                            Button("Remove").click(self.remove, self.state.focus)
 
-                            with HBox():
-                                Label("Spacing")
-                                TextField(self.state("spacing")).change(self.build)
-                                Label("Tab Width")
-                                TextField(self.state("tab_width")).change(self.build)
+                                        with Grid():
+                                            r = 0
 
-                            with HBox():
-                                Label("Simulate Mill Fillets")
-                                TextField(self.state("mill_fillets")).change(self.build)
-                                Checkbox("Export Simulated Mill Fillets", self.state("export_mill_fillets"))
+                                            Label("Rotate").grid(row=r, column=0)
+                                            with HBox().grid(row=r, column=1):
+                                                Button("↺ (r)").click(self.rotateBy, 90)
+                                                Button("↺ 15°").click(self.rotateBy, 15)
+                                                TextField(self.state.focus("rotate")).change(self.build)
+                                                Button("↻ 15°").click(self.rotateBy, -15)
+                                                Button("↻ (R)").click(self.rotateBy, -90)
+                                                Spacer()
+                                            r += 1
 
-                            with HBox():
-                                Label("Cut Method")
-                                RadioButton("V-Cuts or Mousebites", "vc_or_mb", self.state("cut_method")).click(self.build)
-                                RadioButton("V-Cuts and Mousebites", "vc_and_mb", self.state("cut_method")).click(self.build)
-                                RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
-                                # RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                                            Label("Align").grid(row=r, column=0)
+                                            with HBox().grid(row=r, column=1):
+                                                Button("⤒").click(self.align_top, pcb=self.state.focus)
+                                                Button("⤓").click(self.align_bottom, pcb=self.state.focus)
+                                                Button("⇤").click(self.align_left, pcb=self.state.focus)
+                                                Button("⇥").click(self.align_right, pcb=self.state.focus)
+                                                Spacer()
+                                            r += 1
 
+                                            Label("Tabs").grid(row=r, column=0)
+                                            with HBox().grid(row=r, column=1):
+                                                Button("Add").click(self.add_tab)
+                                                if not self.state.focus.tabs():
+                                                    Checkbox("Disable auto tab", self.state.focus("disable_auto_tab")).click(self.build)
+                                                Spacer()
+                                            r += 1
 
-                            with HBox():
-                                Label("V-Cut Layer")
-                                with ComboBox(editable=False, text_model=self.state("vc_layer")):
-                                    ComboBoxItem("User.1")
-                                    ComboBoxItem("Cmts.User")
+                                            for i, tab in enumerate(self.state.focus.tabs()):
+                                                Label(f"Tab {i+1}").grid(row=r, column=0)
+                                                with HBox().grid(row=r, column=1):
+                                                    Button("Highlight").click(self.highlight_tab, i)
+                                                    Button("Remove").click(self.remove_tab, i)
+                                                    Spacer()
+                                                r += 1
 
-                                Spacer()
-                            with HBox():
-                                Label("Mousebites")
-                                Label("Spacing")
-                                TextField(self.state("mb_spacing")).change(self.build)
-                                Label("Diameter")
-                                TextField(self.state("mb_diameter")).change(self.build)
-                                Spacer()
+                                    elif self.state.focus:
+                                        with HBox():
+                                            Label("Selected Hole")
 
-                            if self.state.use_frame:
-                                with HBox():
-                                    Label("Frame Size")
-                                    Label("Width")
-                                    TextField(self.state("frame_width")).change(self.build)
-                                    Label("Height")
-                                    TextField(self.state("frame_height")).change(self.build)
+                                            Spacer()
 
-                                with HBox():
-                                    Label("Frame Width")
-                                    Label("Top")
-                                    TextField(self.state("frame_top")).change(self.build)
-                                    Label("Bottom")
-                                    TextField(self.state("frame_bottom")).change(self.build)
-                                    Label("Left")
-                                    TextField(self.state("frame_left")).change(self.build)
-                                    Label("Right")
-                                    TextField(self.state("frame_right")).change(self.build)
-
-                            with HBox():
-                                Label("Align")
-                                Button("⤒").click(self.align_top)
-                                Button("⤓").click(self.align_bottom)
-                                Button("⇤").click(self.align_left)
-                                Button("⇥").click(self.align_right)
-
-                            if isinstance(self.state.focus, PCB):
-                                Divider()
-
-                                with HBox():
-                                    Label(f"Selected PCB: {self.state.pcb.index(self.state.focus)+1}. {self.state.focus.ident}")
+                                            Button("Remove").click(self.remove, self.state.focus)
 
                                     Spacer()
-
-                                    Button("Duplicate").click(self.duplicate, self.state.focus)
-                                    Button("Remove").click(self.remove, self.state.focus)
-
-                                with Grid():
-                                    r = 0
-
-                                    Label("Rotate").grid(row=r, column=0)
-                                    with HBox().grid(row=r, column=1):
-                                        Button("↺ (r)").click(self.rotateBy, 90)
-                                        Button("↺ 15°").click(self.rotateBy, 15)
-                                        TextField(self.state.focus("rotate")).change(self.build)
-                                        Button("↻ 15°").click(self.rotateBy, -15)
-                                        Button("↻ (R)").click(self.rotateBy, -90)
-                                        Spacer()
-                                    r += 1
-
-                                    Label("Align").grid(row=r, column=0)
-                                    with HBox().grid(row=r, column=1):
-                                        Button("⤒").click(self.align_top, pcb=self.state.focus)
-                                        Button("⤓").click(self.align_bottom, pcb=self.state.focus)
-                                        Button("⇤").click(self.align_left, pcb=self.state.focus)
-                                        Button("⇥").click(self.align_right, pcb=self.state.focus)
-                                        Spacer()
-                                    r += 1
-
-                                    Label("Tabs").grid(row=r, column=0)
-                                    with HBox().grid(row=r, column=1):
-                                        Button("Add").click(self.add_tab)
-                                        if not self.state.focus.tabs():
-                                            Checkbox("Disable auto tab", self.state.focus("disable_auto_tab")).click(self.build)
-                                        Spacer()
-                                    r += 1
-
-                            elif self.state.focus:
-                                with HBox():
-                                    Label("Selected Hole")
-
-                                    Spacer()
-
-                                    Button("Remove").click(self.remove, self.state.focus)
-
 
                         Spacer()
 
