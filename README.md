@@ -81,4 +81,7 @@ Run
 Tab position candidates are determined by the PCB edge and max_tab_spacing, prioritized by divided edge length (smaller first), and skipped if there is a nearby candidate (distance < max_tab_spacing/3) with higher priority.
 
 In the image below with debug mode on, small red dots are tab position candidates, larger red circles are selected candidates, and the two rectangles represent the two half-bridge tabs.
-![Auto Tab](screenshots/auto_tab_selection.png)
+![Auto Tab](screenshots/auto_tab.png)
+
+# Manual Tab
+![Manual Tab](screenshots/manual_tab.gif)
