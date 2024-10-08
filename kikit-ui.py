@@ -691,14 +691,21 @@ class UI(Application):
                 netRenamer=self.netRenamer,
                 refRenamer=self.refRenamer
             )
-            if self.state.hide_outside_reference_value and export:
-                for fp in panel.board.GetFootprints():
-                    ref = fp.Reference()
-                    if not pcb.contains(Point(ref.GetX(), ref.GetY())):
-                        ref.SetVisible(False)
-                    value = fp.Value()
-                    if not pcb.contains(Point(value.GetX(), value.GetY())):
-                        value.SetVisible(False)
+        if self.state.hide_outside_reference_value and export:
+            for fp in panel.board.GetFootprints():
+                ref = fp.Reference()
+                for pcb in pcbs:
+                    if pcb.contains(Point(ref.GetX(), ref.GetY())):
+                        break
+                else:
+                    ref.SetVisible(False)
+
+                value = fp.Value()
+                for pcb in pcbs:
+                    if pcb.contains(Point(value.GetX(), value.GetY())):
+                        break
+                else:
+                    value.SetVisible(False)
 
         if self.state.tight:
             x1, y1, x2, y2 = pcbs[0].bbox
