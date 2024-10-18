@@ -363,6 +363,7 @@ class UI(Application):
         self.state.cut_method = "vc_or_mb"
         self.state.mb_diameter = 0.6
         self.state.mb_spacing = round(0.3 + self.state.mb_diameter, 1)
+        self.state.mb_offset = 0.0
         mb_count = 5
         self.state.tab_width = math.ceil((self.state.mb_spacing * (mb_count-1)) * 10) / 10
         self.state.vc_layer = "Cmts.User"
@@ -486,6 +487,7 @@ class UI(Application):
             "cut_method": self.state.cut_method,
             "mb_diameter": self.state.mb_diameter,
             "mb_spacing": self.state.mb_spacing,
+            "mb_offset": self.state.mb_offset,
             "tab_width": self.state.tab_width,
             "vc_layer": self.state.vc_layer,
             "frame_width": self.state.frame_width,
@@ -536,6 +538,8 @@ class UI(Application):
                 self.state.mb_diameter = data["mb_diameter"]
             if "mb_spacing" in data:
                 self.state.mb_spacing = data["mb_spacing"]
+            if "mb_offset" in data:
+                self.state.mb_offset = data["mb_offset"]
             if "tab_width" in data:
                 self.state.tab_width = data["tab_width"]
             if "vc_layer" in data:
@@ -596,6 +600,7 @@ class UI(Application):
         max_tab_spacing = self.state.max_tab_spacing
         mb_diameter = self.state.mb_diameter
         mb_spacing = self.state.mb_spacing
+        mb_offset = self.state.mb_offset
 
         if export is True:
             export = SaveFile(self.state.export_path, "KiCad PCB (*.kicad_pcb)")
@@ -957,7 +962,7 @@ class UI(Application):
         cut_method = self.state.cut_method
         if cut_method == "mb":
             bites.extend(cuts)
-            panel.makeMouseBites(cuts, diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
+            panel.makeMouseBites(cuts, diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
         elif cut_method == "vc":
             panel.makeVCuts(cuts)
             vcuts.extend(cuts)
@@ -977,7 +982,7 @@ class UI(Application):
                     do_mb = not vc_ok or cut_method == "vc_and_mb"
 
                     if do_mb:
-                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
+                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
                         bites.append(line)
                     if do_vc:
                         panel.makeVCuts([line])
@@ -995,7 +1000,7 @@ class UI(Application):
                     do_mb = not vc_ok or cut_method == "vc_and_mb"
 
                     if do_mb:
-                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=0 * self.unit, prolongation=0 * self.unit)
+                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
                         bites.append(line)
                     if do_vc:
                         panel.makeVCuts([line])
@@ -1414,6 +1419,7 @@ class UI(Application):
         mb_diameter = self.state.mb_diameter
         mb_spacing = self.state.mb_spacing
         i = 0
+        line = line.parallel_offset(self.state.mb_offset * self.unit, "left")
         while i * mb_spacing * self.unit <= line.length:
             p = line.interpolate(i * mb_spacing * self.unit)
             x, y = self.toCanvas(p.x-self.off_x, p.y-self.off_y)
@@ -1654,6 +1660,8 @@ class UI(Application):
                             TextField(self.state("mb_spacing")).change(self.build)
                             Label("Diameter")
                             TextField(self.state("mb_diameter")).change(self.build)
+                            Label("Offset")
+                            TextField(self.state("mb_offset")).change(self.build)
                             Spacer()
 
                         if self.state.use_frame:
