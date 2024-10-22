@@ -350,6 +350,7 @@ class UI(Application):
         self.state.bites = []
         self.state.dbg_points = []
         self.state.dbg_rects = []
+        self.state.dbg_polygons = []
         self.state.dbg_text = []
         self.state.substrates = []
         self.state.holes = []
@@ -741,6 +742,7 @@ class UI(Application):
 
         dbg_points = []
         dbg_rects = []
+        dbg_polygons = []
         dbg_text = []
         tabs = []
         cuts = []
@@ -907,7 +909,7 @@ class UI(Application):
                     cuts.append(tab[1])
 
         for t in tab_substrates:
-            dbg_rects.append(t.bounds)
+            dbg_polygons.append(t.exterior.coords)
             try:
                 panel.appendSubstrate(t)
             except:
@@ -954,6 +956,7 @@ class UI(Application):
             self.state.conflicts = conflicts
             self.state.dbg_points = dbg_points
             self.state.dbg_rects = dbg_rects
+            self.state.dbg_polygons = dbg_polygons
             self.state.dbg_text = dbg_text
             self.state.boardSubstrate = panel.boardSubstrate
 
@@ -1512,6 +1515,9 @@ class UI(Application):
                     x1, y1 = self.toCanvas(rect[0]-self.off_x, rect[1]-self.off_y)
                     x2, y2 = self.toCanvas(rect[2]-self.off_x, rect[3]-self.off_y)
                     canvas.drawRect(x1, y1, x2, y2, stroke=0xFF0000)
+                for polygon in self.state.dbg_polygons:
+                    polygon = [self.toCanvas(p[0]-self.off_x, p[1]-self.off_y) for p in polygon]
+                    canvas.drawPolygon(polygon, stroke=0xFF0000)
                 for text in self.state.dbg_text:
                     x, y = self.toCanvas(text[0]-self.off_x, text[1]-self.off_y)
                     canvas.drawText(x, y, text[2])
