@@ -755,7 +755,7 @@ class UI(Application):
                 tx, ty = extrapolate(x1, y1, x2, y2, 1, spacing/2*self.unit)
 
                 # outward
-                tab = autotab(panel.boardSubstrate, (tx, ty), (tx-x1, ty-y2), tab_width*self.unit)
+                tab = autotab(panel.boardSubstrate, (tx, ty), (tx-x2, ty-y2), tab_width*self.unit)
                 if tab:
                     tab_substrates.append(tab[0])
                     for pcb in pcbs:
