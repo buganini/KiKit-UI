@@ -132,7 +132,7 @@ class PCB(StateObject):
         pcb = PCB(self.file)
         pcb.rotate = self.rotate
         pcb.disable_auto_tab = self.disable_auto_tab
-        pcb._tabs = self._tabs
+        pcb._tabs = list(self._tabs)
         return pcb
 
     def contains(self, p):
