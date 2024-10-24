@@ -331,6 +331,7 @@ class UI(Application):
         self.state.debug = False
         self.state.show_conflicts = True
         self.state.show_pcb = True
+        self.state.show_hole = True
         self.state.show_mb = True
         self.state.show_vc = True
 
@@ -1472,8 +1473,9 @@ class UI(Application):
                     for i in range(1, len(coords)):
                         self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0x777777)
 
-        for hole in self.state.holes:
-            self.drawPolygon(canvas, transform(hole.polygon.exterior, lambda p:p-(self.off_x, self.off_y)).coords, stroke=0xFFCF55 if hole is self.state.focus else 0xFF6E00)
+        if self.state.show_hole:
+            for hole in self.state.holes:
+                self.drawPolygon(canvas, transform(hole.polygon.exterior, lambda p:p-(self.off_x, self.off_y)).coords, stroke=0xFFCF55 if hole is self.state.focus else 0xFF6E00)
 
         if self.state.show_conflicts:
             for conflict in self.state.conflicts:
@@ -1618,6 +1620,7 @@ class UI(Application):
                         Label("Display Options")
                         with HBox():
                             Checkbox("PCB", self.state("show_pcb"))
+                            Checkbox("Hole", self.state("show_hole"))
                             Checkbox("Mousebites", self.state("show_mb"))
                             Checkbox("V-Cut", self.state("show_vc"))
                             Checkbox("Conflicts", self.state("show_conflicts")).click(self.build)
