@@ -272,6 +272,8 @@ def autotabs(boardSubstrate, origin, direction, width,
 
     origin = np.array(origin)
     direction = np.around(normalize(direction), 4)
+    epsilon = direction * float(SHP_EPSILON)
+    origin -= epsilon
     tabs = []
     for geom in listGeometries(boardSubstrate.substrates):
         sideOriginA = origin + makePerpendicular(direction) * width / 2
@@ -284,7 +286,7 @@ def autotabs(boardSubstrate, origin, direction, width,
                 boundary, maxHeight)
             tabFace = biteBoundary(boundary, splitPointB, splitPointA)
 
-            tab = Polygon(list(tabFace.coords) + [sideOriginA, sideOriginB])
+            tab = Polygon([p + epsilon for p in tabFace.coords] + [sideOriginA, sideOriginB])
             tabs.append(boardSubstrate._makeTabFillet(tab, tabFace, fillet))
         except NoIntersectionError as e:
             pass
@@ -299,7 +301,7 @@ def autotabs(boardSubstrate, origin, direction, width,
                     boundary, maxHeight)
                 tabFace = biteBoundary(boundary, splitPointB, splitPointA)
 
-                tab = Polygon(list(tabFace.coords) + [sideOriginA, sideOriginB])
+                tab = Polygon([p + epsilon for p in tabFace.coords] + [sideOriginA, sideOriginB])
                 tabs.append(boardSubstrate._makeTabFillet(tab, tabFace, fillet))
             except NoIntersectionError as e:
                 pass
