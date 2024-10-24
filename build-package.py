@@ -11,7 +11,10 @@ create_dmg = False
 args = []
 if platform.system()=="Darwin":
     args.extend(["--add-binary", f"/Applications/KiCad/KiCad.app/Contents/Frameworks/*.dylib:."])
+    args.extend(["-i", 'icon.icns'])
     create_dmg = True
+else:
+    args.extend(["-i", 'icon.ico'])
 
 args.extend(["--add-data", f"{os.path.join(kikit_base, 'resources', 'kikit.pretty')}:kikit.pretty"])
 
@@ -22,6 +25,7 @@ PyInstaller.__main__.run([
     "--onedir",
     '--noconfirm',
     '--windowed',
+    '--add-data=icon.ico:.',
     *args
 ])
 

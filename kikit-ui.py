@@ -43,6 +43,14 @@ class Direction(Enum):
     Left = 2
     Right = 3
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 def extrapolate(x1, y1, x2, y2, r, d):
     dx = x2 - x1
     dy = y2 - y1
@@ -320,7 +328,7 @@ def autotab(boardSubstrate, origin, direction, width,
 
 class UI(Application):
     def __init__(self):
-        super().__init__()
+        super().__init__(icon=resource_path("icon.ico"))
 
         self.unit = mm
         self.off_x = 20 * self.unit
@@ -1578,7 +1586,7 @@ class UI(Application):
             return orig
 
     def content(self):
-        with Window(size=(1300, 768), title=f"KiKit UI v{VERSION}").keypress(self.keypress):
+        with Window(size=(1300, 768), title=f"KiKit UI v{VERSION}", icon=resource_path("icon.ico")).keypress(self.keypress):
             with VBox():
                 with HBox():
                     self.state.pcb
