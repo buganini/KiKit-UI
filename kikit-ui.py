@@ -967,7 +967,7 @@ class UI(Application):
         cut_method = self.state.cut_method
         if cut_method == "mb":
             bites.extend(cuts)
-            panel.makeMouseBites(cuts, diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
+            panel.makeMouseBites(cuts, diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit - SHP_EPSILON, offset=mb_offset * self.unit, prolongation=0 * self.unit)
         elif cut_method == "vc":
             panel.makeVCuts(cuts)
             vcuts.extend(cuts)
@@ -987,7 +987,7 @@ class UI(Application):
                     do_mb = not vc_ok or cut_method == "vc_and_mb"
 
                     if do_mb:
-                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
+                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
                         bites.append(line)
                     if do_vc:
                         panel.makeVCuts([line])
@@ -1005,7 +1005,7 @@ class UI(Application):
                     do_mb = not vc_ok or cut_method == "vc_and_mb"
 
                     if do_mb:
-                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
+                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
                         bites.append(line)
                     if do_vc:
                         panel.makeVCuts([line])
@@ -1425,7 +1425,7 @@ class UI(Application):
         mb_spacing = self.state.mb_spacing
         i = 0
         line = line.parallel_offset(self.state.mb_offset * self.unit, "left")
-        while i * mb_spacing * self.unit <= line.length:
+        while i * mb_spacing * self.unit <= line.length + SHP_EPSILON:
             p = line.interpolate(i * mb_spacing * self.unit)
             x, y = self.toCanvas(p.x-self.off_x, p.y-self.off_y)
             canvas.drawEllipse(x, y, mb_diameter*self.unit/2*scale, mb_diameter*self.unit/2*scale, stroke=0xFFFF00)

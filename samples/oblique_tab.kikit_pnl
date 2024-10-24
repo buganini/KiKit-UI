@@ -6,7 +6,7 @@
     "auto_tab": false,
     "spacing": 1.6,
     "max_tab_spacing": 50.0,
-    "cut_method": "vc_or_mb",
+    "cut_method": "mb",
     "mb_diameter": 0.6,
     "mb_spacing": 0.9,
     "mb_offset": 0.0,
