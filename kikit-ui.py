@@ -330,6 +330,7 @@ class UI(Application):
         self.state.hide_outside_reference_value = True
         self.state.debug = False
         self.state.show_conflicts = True
+        self.state.show_pcb = True
         self.state.show_mb = True
         self.state.show_vc = True
 
@@ -1441,17 +1442,18 @@ class UI(Application):
             x2, y2 = self.toCanvas(self.state.frame_width*self.unit, self.state.frame_height*self.unit)
             canvas.drawRect(x1, y1, x2, y2, fill=0x151515)
 
-        # pcb areas
-        for i,pcb in enumerate(pcbs):
-            if pcb is self.state.focus:
-                continue
-            self.drawPCB(canvas, i, pcb, False)
+        if self.state.show_pcb:
+            # pcb areas
+            for i,pcb in enumerate(pcbs):
+                if pcb is self.state.focus:
+                    continue
+                self.drawPCB(canvas, i, pcb, False)
 
-        # focus pcb
-        for i,pcb in enumerate(pcbs):
-            if pcb is not self.state.focus:
-                continue
-            self.drawPCB(canvas, i, pcb, True)
+            # focus pcb
+            for i,pcb in enumerate(pcbs):
+                if pcb is not self.state.focus:
+                    continue
+                self.drawPCB(canvas, i, pcb, True)
 
         boardSubstrate = self.state.boardSubstrate
         if boardSubstrate:
@@ -1615,9 +1617,10 @@ class UI(Application):
 
                         Label("Display Options")
                         with HBox():
-                            Checkbox("Display Mousebites", self.state("show_mb"))
-                            Checkbox("Display V-Cut", self.state("show_vc"))
-                            Checkbox("Show Conflicts", self.state("show_conflicts")).click(self.build)
+                            Checkbox("PCB", self.state("show_pcb"))
+                            Checkbox("Mousebites", self.state("show_mb"))
+                            Checkbox("V-Cut", self.state("show_vc"))
+                            Checkbox("Conflicts", self.state("show_conflicts")).click(self.build)
                             Spacer()
                             Checkbox("Debug", self.state("debug")).click(self.build)
 
