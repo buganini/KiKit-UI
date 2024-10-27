@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="256"
+   height="256"
+   viewBox="0 0 256 256"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
+   sodipodi:docname="icon.svg"
+   inkscape:export-filename="icon.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     inkscape:zoom="1.5683261"
+     inkscape:cx="181.72241"
+     inkscape:cy="197.34416"
+     inkscape:window-width="1216"
+     inkscape:window-height="838"
+     inkscape:window-x="158"
+     inkscape:window-y="1117"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="fillet_chamfer"
+       id="path-effect4"
+       is_visible="true"
+       lpeversion="1"
+       nodesatellites_param="F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1"
+       radius="0"
+       unit="px"
+       method="auto"
+       mode="F"
+       chamfer_steps="1"
+       flexible="false"
+       use_knot_distance="true"
+       apply_no_radius="true"
+       apply_with_radius="true"
+       only_selected="false"
+       hide_knots="false" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5">
+      <g
+         inkscape:label="Clip"
+         id="use5">
+        <rect
+           style="fill:#417e5a;fill-opacity:1;stroke-width:1.00157;stroke-dasharray:none"
+           id="path10"
+           width="256"
+           height="256"
+           x="0"
+           y="0"
+           sodipodi:type="rect"
+           rx="35"
+           ry="35"
+           transform="translate(163.37632,-197.3144)" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath7">
+      <use
+         x="0"
+         y="0"
+         xlink:href="#g6"
+         id="use7" />
+    </clipPath>
+    <mask
+       maskUnits="userSpaceOnUse"
+       id="mask11">
+      <rect
+         style="fill:#ffffff;fill-opacity:1;stroke-width:1.00157;stroke-dasharray:none"
+         id="rect12"
+         width="256"
+         height="256"
+         x="0"
+         y="0"
+         rx="35"
+         ry="35" />
+    </mask>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g7"
+       clip-path="url(#clipPath7)"
+       mask="url(#mask11)">
+      <g
+         inkscape:label="Clip"
+         id="g6">
+        <rect
+           style="fill:#2446d1;fill-opacity:1"
+           id="rect1"
+           width="128"
+           height="128"
+           x="0"
+           y="0" />
+        <use
+           x="0"
+           y="0"
+           xlink:href="#rect1"
+           id="use3"
+           transform="translate(128,128)" />
+        <rect
+           style="fill:#417e5a;fill-opacity:1;stroke-width:1.00157;stroke-dasharray:none"
+           id="rect3"
+           width="128"
+           height="128"
+           x="128"
+           y="0" />
+        <use
+           x="0"
+           y="0"
+           xlink:href="#rect3"
+           id="use4"
+           transform="translate(-128,128)" />
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:96px;font-family:'Apple SD Gothic Neo';-inkscape-font-specification:'Apple SD Gothic Neo, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke-width:7.47869;stroke-dasharray:none"
+           x="37.223999"
+           y="104.792"
+           id="text4"><tspan
+             sodipodi:role="line"
+             id="tspan4"
+             x="37.223999"
+             y="104.792"
+             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:96px;font-family:'Apple SD Gothic Neo';-inkscape-font-specification:'Apple SD Gothic Neo, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#ffffff;fill-opacity:1;stroke-width:7.47869">K</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:96px;font-family:'Apple SD Gothic Neo';-inkscape-font-specification:'Apple SD Gothic Neo, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke-width:7.47869;stroke-dasharray:none"
+           x="157.224"
+           y="224.79201"
+           id="text4-9"><tspan
+             sodipodi:role="line"
+             id="tspan4-0"
+             x="157.224"
+             y="224.79201"
+             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:96px;font-family:'Apple SD Gothic Neo';-inkscape-font-specification:'Apple SD Gothic Neo, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#ffffff;fill-opacity:1;stroke-width:7.47869">K</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:96px;font-family:'Apple SD Gothic Neo';-inkscape-font-specification:'Apple SD Gothic Neo, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke-width:7.47869;stroke-dasharray:none"
+           x="157.224"
+           y="104.792"
+           id="text4-2"><tspan
+             sodipodi:role="line"
+             id="tspan4-8"
+             x="157.224"
+             y="104.792"
+             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:96px;font-family:'Apple SD Gothic Neo';-inkscape-font-specification:'Apple SD Gothic Neo, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#ffffff;fill-opacity:1;stroke-width:7.47869">K</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:96px;font-family:'Apple SD Gothic Neo';-inkscape-font-specification:'Apple SD Gothic Neo, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke-width:7.47869;stroke-dasharray:none"
+           x="37.223999"
+           y="224.79201"
+           id="text4-3"><tspan
+             sodipodi:role="line"
+             id="tspan4-5"
+             x="37.223999"
+             y="224.79201"
+             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:96px;font-family:'Apple SD Gothic Neo';-inkscape-font-specification:'Apple SD Gothic Neo, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#ffffff;fill-opacity:1;stroke-width:7.47869">K</tspan></text>
+      </g>
+    </g>
+  </g>
+</svg>
