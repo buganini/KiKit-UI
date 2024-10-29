@@ -5,6 +5,8 @@ if getattr(sys, 'frozen', False):
     import kikit.common
     kikit.common.KIKIT_LIB = os.path.join(sys._MEIPASS, "kikit.pretty")
 
+import pcbnew
+import kikit
 from kikit import panelize, substrate
 from kikit.defs import Layer
 from kikit.units import mm, mil
@@ -22,6 +24,7 @@ import json
 import itertools
 from shootly import *
 from PUI.PySide6 import *
+import PUI
 import wx
 
 VERSION = "3.3"
@@ -1586,7 +1589,8 @@ class UI(Application):
             return orig
 
     def content(self):
-        with Window(size=(1300, 768), title=f"KiKit UI v{VERSION}", icon=resource_path("icon.ico")).keypress(self.keypress):
+        title = f"KiKit UI v{VERSION} (KiCad {pcbnew.Version()}, KiKit {kikit.__version__}, Shapely {shapely.__version__}, PUI {PUI.__version__})"
+        with Window(size=(1300, 768), title=title, icon=resource_path("icon.ico")).keypress(self.keypress):
             with VBox():
                 with HBox():
                     self.state.pcb
