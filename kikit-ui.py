@@ -24,7 +24,7 @@ from shootly import *
 from PUI.PySide6 import *
 import wx
 
-VERSION = "3.2"
+VERSION = "3.3"
 
 VC_EXTENT = 3
 PNL_SUFFIX = ".kikit_pnl"
