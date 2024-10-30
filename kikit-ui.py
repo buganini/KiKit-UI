@@ -982,17 +982,22 @@ class UI(Application):
             bites.extend(cuts)
             panel.makeMouseBites(cuts, diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit - SHP_EPSILON, offset=mb_offset * self.unit, prolongation=0 * self.unit)
         elif cut_method == "vc":
-            panel.makeVCuts(cuts)
-            vcuts.extend(cuts)
+            vc = []
+            for cut in cuts:
+                x1, y1, x2, y2 = cut.bounds
+                if Polygon(((x1,y1), (x2,y1), (x2,y2), (x1,y2))).area == 0:
+                    vc.append(cut)
+            panel.makeVCuts(vc)
+            vcuts.extend(vc)
         elif cut_method == "vc_or_mb" or cut_method == "vc_and_mb":
-            for line in cuts:
-                p1 = line.coords[0]
-                p2 = line.coords[-1]
+            for cut in cuts:
+                p1 = cut.coords[0]
+                p2 = cut.coords[-1]
                 if p1[0]==p2[0]: # vertical
                     vc_ok = True
-                    for pcb in pcbs:
+                    for i, pcb in enumerate(pcbs):
                         x1, y1, x2, y2 = pcb.bbox
-                        if x1 < p1[0] and p1[0] < x2:
+                        if x1+SHP_EPSILON < p1[0] and p1[0] < x2-SHP_EPSILON:
                             vc_ok = False
                             break
 
@@ -1000,17 +1005,17 @@ class UI(Application):
                     do_mb = not vc_ok or cut_method == "vc_and_mb"
 
                     if do_mb:
-                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
-                        bites.append(line)
+                        panel.makeMouseBites([cut], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
+                        bites.append(cut)
                     if do_vc:
-                        panel.makeVCuts([line])
-                        vcuts.append(line)
+                        panel.makeVCuts([cut])
+                        vcuts.append(cut)
 
                 elif p1[1]==p2[1]: # horizontal
                     vc_ok = True
-                    for pcb in pcbs:
+                    for i, pcb in enumerate(pcbs):
                         x1, y1, x2, y2 = pcb.bbox
-                        if y1 < p1[1] and p1[1] < y2:
+                        if y1+SHP_EPSILON < p1[1] and p1[1] < y2-SHP_EPSILON:
                             vc_ok = False
                             break
 
@@ -1018,11 +1023,15 @@ class UI(Application):
                     do_mb = not vc_ok or cut_method == "vc_and_mb"
 
                     if do_mb:
-                        panel.makeMouseBites([line], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
-                        bites.append(line)
+                        panel.makeMouseBites([cut], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
+                        bites.append(cut)
                     if do_vc:
-                        panel.makeVCuts([line])
-                        vcuts.append(line)
+                        panel.makeVCuts([cut])
+                        vcuts.append(cut)
+
+                else:
+                    panel.makeMouseBites([cut], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
+                    bites.append(cut)
 
         if not export:
             self.state.vcuts = vcuts
@@ -1671,6 +1680,7 @@ class UI(Application):
                             RadioButton("V-Cuts and Mousebites", "vc_and_mb", self.state("cut_method")).click(self.build)
                             RadioButton("Mousebites", "mb", self.state("cut_method")).click(self.build)
                             # RadioButton("V-Cut", "vc", self.state("cut_method")).click(self.build)
+                            RadioButton("None", "none", self.state("cut_method")).click(self.build)
 
 
                         with HBox():
