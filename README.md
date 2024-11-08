@@ -14,7 +14,7 @@ Tested with KiCad 7.0.10/8.0 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e9
 * Enable hole creation in panel substrate for extruded parts
 * Does not require coding skill
 
-# Installation
+# Installation from source
 Make sure your python can import `pcbnew`
 ```
 > python3 -c "import pcbnew; print(pcbnew._pcbnew)"
