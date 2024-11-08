@@ -21,7 +21,7 @@
     "export_mill_fillets": false,
     "pcb": [
         {
-            "file": "../resources/50x18.kicad_pcb",
+            "file": "./50x18.kicad_pcb",
             "x": -7813601.0,
             "y": 47491874.0,
             "rotate": 90,
@@ -29,7 +29,7 @@
             "tabs": []
         },
         {
-            "file": "../resources/25x12.kicad_pcb",
+            "file": "./25x12.kicad_pcb",
             "x": 10481944.0,
             "y": 101669894.0,
             "rotate": 90,
@@ -37,7 +37,7 @@
             "tabs": []
         },
         {
-            "file": "../resources/50x18.kicad_pcb",
+            "file": "./50x18.kicad_pcb",
             "x": 16021509,
             "y": 57450015.0,
             "rotate": 90,
@@ -45,7 +45,7 @@
             "tabs": []
         },
         {
-            "file": "../resources/50x18.kicad_pcb",
+            "file": "./50x18.kicad_pcb",
             "x": 65099980,
             "y": 60750014.0,
             "rotate": 90,
@@ -62,7 +62,7 @@
             ]
         },
         {
-            "file": "../resources/50x18.kicad_pcb",
+            "file": "./50x18.kicad_pcb",
             "x": 90243674,
             "y": 61487438.0,
             "rotate": 90,
@@ -70,7 +70,7 @@
             "tabs": []
         },
         {
-            "file": "../resources/25x12.kicad_pcb",
+            "file": "./25x12.kicad_pcb",
             "x": 47999175,
             "y": 103168364.0,
             "rotate": 90,
@@ -78,7 +78,7 @@
             "tabs": []
         },
         {
-            "file": "../resources/25x12.kicad_pcb",
+            "file": "./25x12.kicad_pcb",
             "x": 67046989,
             "y": 101651892.0,
             "rotate": 90,
@@ -86,7 +86,7 @@
             "tabs": []
         },
         {
-            "file": "../resources/25x12.kicad_pcb",
+            "file": "./25x12.kicad_pcb",
             "x": 92555110,
             "y": 106235322.0,
             "rotate": 90,

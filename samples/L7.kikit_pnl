@@ -18,49 +18,49 @@
     "mill_fillets": 0.5,
     "pcb": [
         {
-            "file": "../resources/L.kicad_pcb",
+            "file": "./L.kicad_pcb",
             "x": 0,
             "y": 6600000.0,
             "rotate": 0
         },
         {
-            "file": "../resources/L.kicad_pcb",
+            "file": "./L.kicad_pcb",
             "x": 101600000.0,
             "y": 81600000.0,
             "rotate": 180
         },
         {
-            "file": "../resources/L.kicad_pcb",
+            "file": "./L.kicad_pcb",
             "x": 66114331.0,
             "y": 111838002.0,
             "rotate": 270
         },
         {
-            "file": "../resources/L.kicad_pcb",
+            "file": "./L.kicad_pcb",
             "x": 28190109.0,
             "y": 194733117.0,
             "rotate": 90
         },
         {
-            "file": "../resources/L.kicad_pcb",
+            "file": "./L.kicad_pcb",
             "x": 64321145,
             "y": 208266595.0,
             "rotate": 270
         },
         {
-            "file": "../resources/L.kicad_pcb",
+            "file": "./L.kicad_pcb",
             "x": 32483320,
             "y": 272426824.0,
             "rotate": 90
         },
         {
-            "file": "../resources/L.kicad_pcb",
+            "file": "./L.kicad_pcb",
             "x": 0,
             "y": 324026824.0,
             "rotate": 0
         },
         {
-            "file": "../resources/L.kicad_pcb",
+            "file": "./L.kicad_pcb",
             "x": 78789947,
             "y": 366573546.0,
             "rotate": 180

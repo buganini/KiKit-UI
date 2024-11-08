@@ -24,7 +24,7 @@
     "refRenamePattern": "Board_{n}-{orig}",
     "pcb": [
         {
-            "file": "../resources/circle.kicad_pcb",
+            "file": "./circle.kicad_pcb",
             "x": 37151452,
             "y": 21644498.0,
             "rotate": 0,
@@ -37,7 +37,7 @@
             ]
         },
         {
-            "file": "../resources/25x12.kicad_pcb",
+            "file": "./25x12.kicad_pcb",
             "x": 56251849.548048876,
             "y": 65338404.41935304,
             "rotate": 45,
@@ -50,7 +50,7 @@
             ]
         },
         {
-            "file": "../resources/rounded.kicad_pcb",
+            "file": "./rounded.kicad_pcb",
             "x": 13758506,
             "y": 54886391.323255286,
             "rotate": 0,
@@ -63,7 +63,7 @@
             ]
         },
         {
-            "file": "../resources/25x12.kicad_pcb",
+            "file": "./25x12.kicad_pcb",
             "x": 7748126.451951146,
             "y": 80556849.24554272,
             "rotate": 0,
@@ -80,7 +80,7 @@
             ]
         },
         {
-            "file": "../resources/25x12.kicad_pcb",
+            "file": "./25x12.kicad_pcb",
             "x": 67869814,
             "y": 8024291.24554272,
             "rotate": 0,
