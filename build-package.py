@@ -9,6 +9,7 @@ import kikit
 kikit_base = os.path.dirname(kikit.__file__)
 
 create_dmg = False
+codesign_identity = None
 
 pyinstaller_args = []
 create_dmg_args = []
