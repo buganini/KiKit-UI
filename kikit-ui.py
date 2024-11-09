@@ -27,7 +27,7 @@ from PUI.PySide6 import *
 import PUI
 import wx
 
-VERSION = "3.3"
+VERSION = "3.4"
 
 VC_EXTENT = 3
 PNL_SUFFIX = ".kikit_pnl"
