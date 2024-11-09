@@ -1402,7 +1402,7 @@ class UI(Application):
             x2, y2 = extrapolate(x1, y1, x2, y2, 1, self.state.spacing/2*self.unit)
             x1, y1 = self.toCanvas(x1-self.off_x, y1-self.off_y)
             x2, y2 = self.toCanvas(x2-self.off_x, y2-self.off_y)
-            if i == self.state.focus_tab:
+            if i == self.state.focus_tab and pcb is self.state.focus:
                 width = 3
             else:
                 width = 1
