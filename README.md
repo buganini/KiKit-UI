@@ -14,46 +14,6 @@ Tested with KiCad 7.0.10/8.0 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e9
 * Enable hole creation in panel substrate for extruded parts
 * Does not require coding skill
 
-# Installation from source
-Make sure your python can import `pcbnew`
-```
-> python3 -c "import pcbnew; print(pcbnew._pcbnew)"
-<module '_pcbnew' from '/usr/lib/python3/dist-packages/_pcbnew.so'>
-```
-On macOS, I have to use the python interpreter bundled with KiCAD
-```
-PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
-```
-
-Create a virtual environment and install dependencies
-```
-${PYTHON} -m venv --system-site-packages env
-./env/bin/pip3 install -r requirements.txt
-```
-
-Run
-```
-./env/bin/python3 kikit-ui.py
-```
-
-# Usage
-```
-# Just open it
-./env/bin/python3 kikit-ui.py
-
-# Start with PCB files
-./env/bin/python3 kikit-ui.py a.kicad_pcb b.kicad_pcb...
-
-# Load file
-./env/bin/python3 kikit-ui.py a.kikit_pnl
-
-# Headless export
-./env/bin/python3 kikit-ui.py a.kikit_pnl out.kicad_pcb
-```
-
-# First PCBA (Mousebites)
-![First PCBA](screenshots/pcba.jpg)
-
 # Global Aligment
 ![Global Alignment](screenshots/global_alignment.gif)
 
@@ -86,3 +46,40 @@ In the image below with debug mode on, small red dots are tab position candidate
 
 # Manual Tab
 ![Manual Tab](screenshots/manual_tab.gif)
+
+# Installation from source
+Make sure your python can import `pcbnew`
+```
+> python3 -c "import pcbnew; print(pcbnew._pcbnew)"
+<module '_pcbnew' from '/usr/lib/python3/dist-packages/_pcbnew.so'>
+```
+On macOS, I have to use the python interpreter bundled with KiCAD
+```
+PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
+```
+
+Create a virtual environment and install dependencies
+```
+${PYTHON} -m venv --system-site-packages env
+./env/bin/pip3 install -r requirements.txt
+```
+
+Run
+```
+./env/bin/python3 kikit-ui.py
+```
+
+# CLI Usage
+```
+# Just open it
+./env/bin/python3 kikit-ui.py
+
+# Start with PCB files
+./env/bin/python3 kikit-ui.py a.kicad_pcb b.kicad_pcb...
+
+# Load file
+./env/bin/python3 kikit-ui.py a.kikit_pnl
+
+# Headless export
+./env/bin/python3 kikit-ui.py a.kikit_pnl out.kicad_pcb
+```
