@@ -14,10 +14,10 @@ Tested with KiCad 7.0.10/8.0 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e9
 * Enable hole creation in panel substrate for extruded parts
 * Does not require coding skill
 
-# Global Aligment
+# Global Alignment
 ![Global Alignment](screenshots/global_alignment.gif)
 
-# Per-PCB Aligment
+# Per-PCB Alignment
 ![Per-PCB Alignment](screenshots/single_alignment.gif)
 
 # Substrate Hole
