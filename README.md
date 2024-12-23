@@ -5,8 +5,6 @@ This project is mainly built on top of [KiKit](https://github.com/yaqwsx/KiKit),
 
 Tested with KiCad 7.0.10/8.0 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e979115fc572deb480a768e291e6b` for arbitrary rotation)
 
-The saved .kikit_pnl file is actually a JSON file, the saved PCB path will be relative to the .kikit_pnl file.
-
 # Features
 * Interactive arrangement, what you see is what you get
 * Freeform arrangement, not limited to M×N configuration
@@ -15,6 +13,9 @@ The saved .kikit_pnl file is actually a JSON file, the saved PCB path will be re
 * Auto V-cut/mousebites selection
 * Enable hole creation in panel substrate for extruded parts
 * Does not require coding skill
+
+# kikit_pnl file
+The .kikit_pnl file saves panelization settings in JSON format, with PCB paths stored relative to the file's location.
 
 # Global Alignment
 ![Global Alignment](screenshots/global_alignment.gif)
