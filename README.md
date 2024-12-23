@@ -5,6 +5,8 @@ This project is mainly built on top of [KiKit](https://github.com/yaqwsx/KiKit),
 
 Tested with KiCad 7.0.10/8.0 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e979115fc572deb480a768e291e6b` for arbitrary rotation)
 
+The saved .kikit_pnl file is actually a JSON file, the saved PCB path will be relative to the .kikit_pnl file.
+
 # Features
 * Interactive arrangement, what you see is what you get
 * Freeform arrangement, not limited to M×N configuration
