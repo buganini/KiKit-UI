@@ -383,6 +383,8 @@ class UI(Application):
         mb_count = 5
         self.state.tab_width = math.ceil((self.state.mb_spacing * (mb_count-1)) * 10) / 10
         self.state.vc_layer = "Cmts.User"
+        self.state.merge_vcuts = True
+        self.state.merge_vcuts_threshold = 0.5
         self.state.frame_width = 100
         self.state.frame_height = 100
         self.state.frame_top = 5
@@ -976,20 +978,29 @@ class UI(Application):
             self.state.dbg_text = dbg_text
             self.state.boardSubstrate = panel.boardSubstrate
 
+        filtered_vcuts = []
+        for cut in cuts:
+            x1, y1, x2, y2 = cut.bounds
+            if Polygon(((x1,y1), (x2,y1), (x2,y2), (x1,y2))).area == 0: # is a line
+                filtered_vcuts.append(cut)
+        cuts = sorted(filtered_vcuts,key=lambda cut: cut.bounds)
+
+        # normalize linestring direction
+        for i in range(len(cuts)):
+            if cuts[i].coords[0][1] > cuts[i].coords[1][1]:
+                cuts[i] = shapely.reverse(cuts[i])
+            if cuts[i].coords[0][0] > cuts[i].coords[1][0]:
+                cuts[i] = shapely.reverse(cuts[i])
+
         vcuts = []
         bites = []
         cut_method = self.state.cut_method
+
         if cut_method == "mb":
             bites.extend(cuts)
             panel.makeMouseBites(cuts, diameter=mb_diameter * self.unit, spacing=mb_spacing * self.unit - SHP_EPSILON, offset=mb_offset * self.unit, prolongation=0 * self.unit)
         elif cut_method == "vc":
-            vc = []
-            for cut in cuts:
-                x1, y1, x2, y2 = cut.bounds
-                if Polygon(((x1,y1), (x2,y1), (x2,y2), (x1,y2))).area == 0:
-                    vc.append(cut)
-            panel.makeVCuts(vc)
-            vcuts.extend(vc)
+            vcuts.extend(cuts)
         elif cut_method == "vc_or_mb" or cut_method == "vc_and_mb":
             for cut in cuts:
                 p1 = cut.coords[0]
@@ -998,7 +1009,7 @@ class UI(Application):
                     vc_ok = True
                     for i, pcb in enumerate(pcbs):
                         x1, y1, x2, y2 = pcb.bbox
-                        if x1+SHP_EPSILON < p1[0] and p1[0] < x2-SHP_EPSILON:
+                        if x1+SHP_EPSILON < p1[0] and p1[0] < x2-SHP_EPSILON: # cut through other pcb
                             vc_ok = False
                             break
 
@@ -1009,14 +1020,13 @@ class UI(Application):
                         panel.makeMouseBites([cut], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
                         bites.append(cut)
                     if do_vc:
-                        panel.makeVCuts([cut])
                         vcuts.append(cut)
 
                 elif p1[1]==p2[1]: # horizontal
                     vc_ok = True
                     for i, pcb in enumerate(pcbs):
                         x1, y1, x2, y2 = pcb.bbox
-                        if y1+SHP_EPSILON < p1[1] and p1[1] < y2-SHP_EPSILON:
+                        if y1+SHP_EPSILON < p1[1] and p1[1] < y2-SHP_EPSILON: # cut through other pcb
                             vc_ok = False
                             break
 
@@ -1027,12 +1037,59 @@ class UI(Application):
                         panel.makeMouseBites([cut], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
                         bites.append(cut)
                     if do_vc:
-                        panel.makeVCuts([cut])
                         vcuts.append(cut)
 
                 else:
                     panel.makeMouseBites([cut], diameter=mb_diameter * self.unit - SHP_EPSILON, spacing=mb_spacing * self.unit, offset=mb_offset * self.unit, prolongation=0 * self.unit)
                     bites.append(cut)
+
+        merge_vcuts = self.state.merge_vcuts
+        merge_threshold = self.state.merge_vcuts_threshold * self.unit
+        if merge_vcuts:
+            if self.state.debug:
+                conflicts.extend(vcuts)
+
+            horizontal_vcuts = []
+            vertical_vcuts = []
+            for vcut in vcuts:
+                if vcut.coords[0][1] == vcut.coords[-1][1]:
+                    horizontal_vcuts.append(vcut.coords[0][1])
+                if vcut.coords[0][0] == vcut.coords[-1][0]:
+                    vertical_vcuts.append(vcut.coords[0][0])
+
+            # grouping
+            horitonzal_groups = []
+            for p in horizontal_vcuts:
+                for g in horitonzal_groups:
+                    if any([abs(p-p2) <= merge_threshold + SHP_EPSILON for p2 in g]):
+                        if not p in g:
+                            g.append(p)
+                        break
+                else:
+                    horitonzal_groups.append([p])
+
+            vertical_groups = []
+            for p in vertical_vcuts:
+                for g in vertical_groups:
+                    if any([abs(p-p2) <= merge_threshold + SHP_EPSILON for p2 in g]):
+                        if not p in g:
+                            g.append(p)
+                        break
+                else:
+                    vertical_groups.append([p])
+
+            horitonzal_groups = [sum(g)/len(g) for g in horitonzal_groups]
+            vertical_groups = [sum(g)/len(g) for g in vertical_groups]
+
+            vcuts = []
+
+            boardSubstrateBounds = panel.boardSubstrate.bounds()
+            for y in horitonzal_groups:
+                vcuts.append(LineString([(boardSubstrateBounds[0], y), (boardSubstrateBounds[2], y)]))
+            for x in vertical_groups:
+                vcuts.append(LineString([(x, boardSubstrateBounds[1]), (x, boardSubstrateBounds[3])]))
+
+        panel.makeVCuts(vcuts)
 
         if not export:
             self.state.vcuts = vcuts
@@ -1690,6 +1747,9 @@ class UI(Application):
                                 ComboBoxItem("User.1")
                                 ComboBoxItem("Cmts.User")
                                 ComboBoxItem("Edge.Cuts")
+
+                            Checkbox("Merge V-Cuts", self.state("merge_vcuts")).click(self.build)
+                            TextField(self.state("merge_vcuts_threshold")).change(self.build)
 
                             Spacer()
                         with HBox():
