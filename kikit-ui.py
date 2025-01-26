@@ -385,7 +385,7 @@ class UI(Application):
         self.state.tab_width = math.ceil((self.state.mb_spacing * (mb_count-1)) * 10) / 10
         self.state.vc_layer = "Cmts.User"
         self.state.merge_vcuts = True
-        self.state.merge_vcuts_threshold = 0.5
+        self.state.merge_vcuts_threshold = 0.4
         self.state.frame_width = 100
         self.state.frame_height = 100
         self.state.frame_top = 5
