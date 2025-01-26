@@ -1754,8 +1754,8 @@ class UI(Application):
                         with HBox():
                             Label("V-Cut Layer")
                             with ComboBox(editable=False, text_model=self.state("vc_layer")):
-                                ComboBoxItem("User.1")
                                 ComboBoxItem("Cmts.User")
+                                ComboBoxItem("User.1")
                                 ComboBoxItem("Edge.Cuts")
 
                             Checkbox("Merge V-Cuts", self.state("merge_vcuts")).click(self.build)
