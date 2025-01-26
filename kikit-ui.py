@@ -1439,10 +1439,25 @@ class UI(Application):
 
     def wheel(self, e):
         offx, offy, scale = self.state.scale
-        nscale = scale + e.v_delta / 120 * scale
+        zoom_factor = 1.2  # Factor for smoother zooming
+
+        if abs(e.v_delta) >= 120:
+            if e.v_delta < 0:
+                # Zoom out
+                nscale = scale / zoom_factor
+            elif e.v_delta:
+                # Zoom in
+                nscale = scale * zoom_factor
+        else:
+            nscale = scale + e.v_delta / 100 * scale
+
+        # Limit the scale
         nscale = min(self.scale*2, max(self.scale/8, nscale))
-        offx = e.x - (e.x - offx)*nscale/scale
-        offy = e.y - (e.y - offy)*nscale/scale
+
+        # Calculate new offsets
+        offx = e.x - (e.x - offx) * nscale / scale
+        offy = e.y - (e.y - offy) * nscale / scale
+
         self.state.scale = offx, offy, nscale
 
     def keypress(self, event):

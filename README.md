@@ -94,3 +94,7 @@ But however in my Windows environment venv is not working properly, here is how 
 # Headless export
 ./env/bin/python3 kikit-ui.py a.kikit_pnl out.kicad_pcb
 ```
+
+# Contributors
+* @buganini
+* @dartrax
