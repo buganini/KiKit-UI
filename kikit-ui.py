@@ -957,7 +957,7 @@ class UI(Application):
         for i,a in enumerate(shapes):
             for b in shapes[i+1:]:
                 conflict = shapely.intersection(a, b)
-                if not conflict.is_empty:
+                if not conflict.is_empty and conflict.area > 0:
                     conflicts.append(conflict)
 
         for pcb in pcbs:
