@@ -508,6 +508,8 @@ class UI(Application):
             "mb_offset": self.state.mb_offset,
             "tab_width": self.state.tab_width,
             "vc_layer": self.state.vc_layer,
+            "merge_vcuts": self.state.merge_vcuts,
+            "merge_vcuts_threshold": self.state.merge_vcuts_threshold,
             "frame_width": self.state.frame_width,
             "frame_height": self.state.frame_height,
             "frame_top": self.state.frame_top,
@@ -562,6 +564,10 @@ class UI(Application):
                 self.state.tab_width = data["tab_width"]
             if "vc_layer" in data:
                 self.state.vc_layer = data["vc_layer"]
+            if "merge_vcuts" in data:
+                self.state.merge_vcuts = data["merge_vcuts"]
+            if "merge_vcuts_threshold" in data:
+                self.state.merge_vcuts_threshold = data["merge_vcuts_threshold"]
             if "frame_width" in data:
                 self.state.frame_width = data["frame_width"]
             if "frame_height" in data:
