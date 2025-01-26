@@ -633,9 +633,9 @@ class UI(Application):
 
         panel = panelize.Panel(self.state.export_path if export else "")
         panel.vCutSettings.layer = {
+            "Cmts.User": Layer.Cmts_User,
             "Edge.Cuts": Layer.Edge_Cuts,
             "User.1": Layer.User_1,
-            "Edge.Cuts": Layer.Edge_Cuts,
         }.get(self.state.vc_layer, Layer.Cmts_User)
 
 
