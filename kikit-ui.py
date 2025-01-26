@@ -29,6 +29,7 @@ import wx
 
 VERSION = "3.4"
 
+MIN_SPACING = 0.1
 VC_EXTENT = 3
 PNL_SUFFIX = ".kikit_pnl"
 PCB_SUFFIX = ".kicad_pcb"
@@ -618,6 +619,9 @@ class UI(Application):
         pcbs = self.state.pcb
         if len(pcbs) == 0:
             return
+
+        if self.state.spacing < MIN_SPACING:
+            self.state.spacing = MIN_SPACING
 
         spacing = self.state.spacing
         tab_width = self.state.tab_width
