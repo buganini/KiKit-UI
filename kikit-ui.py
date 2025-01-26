@@ -725,6 +725,7 @@ class UI(Application):
                 netRenamer=self.netRenamer,
                 refRenamer=self.refRenamer
             )
+
         if self.state.hide_outside_reference_value and export:
             for fp in panel.board.GetFootprints():
                 ref = fp.Reference()
@@ -882,7 +883,7 @@ class UI(Application):
             dbg_points.append((p, 1))
         tab_candidates = filtered_cands
 
-        # x, y, abs(direction)
+        # x, y, abs(direction), partition index
         tabs = []
         tab_dist = max_tab_spacing*self.unit/3
         for p, inward_direction, partiion, score_divider in tab_candidates:
