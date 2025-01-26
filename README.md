@@ -50,7 +50,7 @@ In the image below with debug mode on, small red dots are tab position candidate
 # Manual Tab
 ![Manual Tab](screenshots/manual_tab.gif)
 
-# Installation from source
+# Run from source (Linux/macOS)
 Make sure your python can import `pcbnew`
 ```
 > python3 -c "import pcbnew; print(pcbnew._pcbnew)"
@@ -70,6 +70,14 @@ ${PYTHON} -m venv --system-site-packages env
 Run
 ```
 ./env/bin/python3 kikit-ui.py
+```
+
+# Run from source (Windows)
+On Windows the Python interpreter is at `C:\Program Files\KiCad\8.0\bin\python.exe`.
+But however in my Windows environment venv is not working properly, here is how I run it with everything installed in the KiCad's environment.
+```
+"C:\Program Files\KiCad\8.0\bin\python.exe" -m pip install -r requirements.txt
+"C:\Program Files\KiCad\8.0\bin\python.exe" kikit-ui.py
 ```
 
 # CLI Usage
