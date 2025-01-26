@@ -1507,7 +1507,7 @@ class UI(Application):
                     elif isinstance(conflict, LineString):
                         coords = transform(conflict, lambda p:p-(self.off_x, self.off_y)).coords
                         for i in range(1, len(coords)):
-                            self.drawLine(canvas, coords[i-1][0]-self.off_x, coords[i-1][1]-self.off_y, coords[i][0]-self.off_x, coords[i][1]-self.off_y, color=0xFF0000)
+                            self.drawLine(canvas, coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1], color=0xFF0000)
                     elif isinstance(conflict, MultiPolygon):
                         for p in conflict.geoms:
                             coords = transform(p.exterior, lambda p:p-(self.off_x, self.off_y)).coords
