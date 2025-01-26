@@ -635,6 +635,7 @@ class UI(Application):
         panel.vCutSettings.layer = {
             "Edge.Cuts": Layer.Edge_Cuts,
             "User.1": Layer.User_1,
+            "Edge.Cuts": Layer.Edge_Cuts,
         }.get(self.state.vc_layer, Layer.Cmts_User)
 
 
@@ -1688,6 +1689,7 @@ class UI(Application):
                             with ComboBox(editable=False, text_model=self.state("vc_layer")):
                                 ComboBoxItem("User.1")
                                 ComboBoxItem("Cmts.User")
+                                ComboBoxItem("Edge.Cuts")
 
                             Spacer()
                         with HBox():
