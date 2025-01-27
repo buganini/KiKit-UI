@@ -1442,15 +1442,7 @@ class UI(Application):
         offx, offy, scale = self.state.scale
         zoom_factor = 1.2  # Factor for smoother zooming
 
-        if abs(e.v_delta) >= 120:
-            if e.v_delta < 0:
-                # Zoom out
-                nscale = scale / zoom_factor
-            elif e.v_delta:
-                # Zoom in
-                nscale = scale * zoom_factor
-        else:
-            nscale = scale + e.v_delta / 100 * scale
+        nscale = scale * (zoom_factor ** (e.v_delta / 120))
 
         # Limit the scale
         nscale = min(self.scale*2, max(self.scale/8, nscale))
