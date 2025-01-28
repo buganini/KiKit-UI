@@ -1766,7 +1766,7 @@ class UI(Application):
                                 ComboBoxItem("User.1")
                                 ComboBoxItem("Edge.Cuts")
 
-                            Checkbox("Merge V-Cuts", self.state("merge_vcuts")).click(self.build)
+                            Checkbox("Merge V-Cuts within", self.state("merge_vcuts")).click(self.build)
                             TextField(self.state("merge_vcuts_threshold")).change(self.build)
 
                             Spacer()
