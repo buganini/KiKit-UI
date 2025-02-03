@@ -61,6 +61,11 @@ On macOS, I have to use the python interpreter bundled with KiCAD
 PYTHON=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 ```
 
+On Linux, you should be able to just use the your default python3
+```
+PYTHON=python3
+```
+
 Create a virtual environment and install dependencies
 ```
 ${PYTHON} -m venv --system-site-packages env
