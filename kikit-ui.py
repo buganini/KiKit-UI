@@ -27,7 +27,7 @@ from PUI.PySide6 import *
 import PUI
 import wx
 
-VERSION = "3.4"
+VERSION = "3.5"
 
 MIN_SPACING = 0.1
 VC_EXTENT = 3
