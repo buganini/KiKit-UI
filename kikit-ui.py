@@ -1693,7 +1693,7 @@ class UI(Application):
                         .layout(width=self.state.canvas_width, height=self.state.canvas_height)
                         .style(bgColor=0x000000))
 
-                    with VBox():
+                    with VBox().layout(weight=1):
                         with HBox():
                             Label("Panel")
                             Button("Load").click(self.load)
