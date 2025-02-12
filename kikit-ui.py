@@ -1735,9 +1735,9 @@ class UI(Application):
                             Checkbox("Use Frame", self.state("use_frame")).click(self.build)
                             Checkbox("Tight", self.state("tight")).click(self.build)
                             Checkbox("Auto Tab", self.state("auto_tab")).click(self.build)
-                            Spacer()
                             Label("Max Tab Spacing")
                             TextField(self.state("max_tab_spacing")).layout(width=50).change(self.build)
+                            Spacer()
 
                         with HBox():
                             Label("Spacing")
