@@ -430,7 +430,7 @@ class UI(Application):
         self.state.scale = (offx, offy, scale)
 
     def addPCB(self, e):
-        boardfile = OpenFile("Open PCB", types="KiCad PCB (*.kicad_pcb)")
+        boardfile = OpenFile("Open PCB", types="KiCad PCB (*.kicad_pcb)|*.kicad_pcb")
         if boardfile:
             p = PCB(boardfile)
             self._addPCB(p)
@@ -469,7 +469,7 @@ class UI(Application):
 
     def save(self, e, target=None):
         if target is None:
-            target = SaveFile(self.state.target_path, types="KiKit Panelization (*.kikit_pnl)")
+            target = SaveFile(self.state.target_path, types="KiKit Panelization (*.kikit_pnl)|*.kikit_pnl")
         if not target:
             return
 
@@ -530,7 +530,7 @@ class UI(Application):
 
     def load(self, e, target=None):
         if target is None:
-            target = OpenFile("Load Panelization", types="KiKit Panelization (*.kikit_pnl)")
+            target = OpenFile("Load Panelization", types="KiKit Panelization (*.kikit_pnl)|*.kikit_pnl")
         if target:
             target = os.path.realpath(target)
             self.state.target_path = target
@@ -631,7 +631,7 @@ class UI(Application):
         mb_offset = self.state.mb_offset
 
         if export is True:
-            export = SaveFile(self.state.export_path, "KiCad PCB (*.kicad_pcb)")
+            export = SaveFile(self.state.export_path, "KiCad PCB (*.kicad_pcb)|*.kicad_pcb")
             if export:
                 if not export.endswith(PCB_SUFFIX):
                     export += PCB_SUFFIX
