@@ -401,6 +401,7 @@ class UI(Application):
         self.mousepos = None
         self.mouse_dragging = None
         self.mousehold = False
+        self.mousemoved = 0
         self.tool = Tool.NONE
         self.state.edit_polygon = None
 
