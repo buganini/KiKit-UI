@@ -1879,8 +1879,7 @@ class UI(Application):
 
                         Label(f"Conflicts: {len(self.state.conflicts)}")
 
-if PUI_BACKEND != "wx":
-    wx_app = wx.App()
+wx_app = wx.App()
 
 ui = UI()
 
