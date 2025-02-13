@@ -632,7 +632,7 @@ class UI(Application):
         mb_offset = self.state.mb_offset
 
         if export is True:
-            export = SaveFile(self.state.export_path, "KiCad PCB (*.kicad_pcb)|*.kicad_pcb")
+            export = SaveFile(self.state.export_path, types="KiCad PCB (*.kicad_pcb)|*.kicad_pcb")
             if export:
                 if not export.endswith(PCB_SUFFIX):
                     export += PCB_SUFFIX
