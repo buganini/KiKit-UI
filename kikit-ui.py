@@ -1874,8 +1874,8 @@ class UI(Application):
                                             Button("Remove").click(self.remove, self.state.focus)
 
                                     Spacer()
-
-                        Spacer()
+                        else:
+                            Spacer()
 
                         Label(f"Conflicts: {len(self.state.conflicts)}")
 
