@@ -34,6 +34,7 @@ PyInstaller.__main__.run([
     "--onedir",
     "--noconfirm",
     "--windowed",
+    "--icon=resources/icon.ico",
     "--add-data=resources/icon.ico:.",
     *pyinstaller_args
 ])
