@@ -3,8 +3,6 @@
 
 This project is mainly built on top of [KiKit](https://github.com/yaqwsx/KiKit), [Shapely](https://github.com/shapely/shapely) and [PUI](https://github.com/buganini/PUI).
 
-Tested with KiCad 7.0.10/8.0 and KiKit 1.6.0 (requires unreleased `e19408a1ae5e979115fc572deb480a768e291e6b` for arbitrary rotation)
-
 # Features
 * Interactive arrangement, what you see is what you get
 * Freeform arrangement, not limited to M×N configuration
@@ -81,8 +79,8 @@ Run
 On Windows the Python interpreter is at `C:\Program Files\KiCad\9.0\bin\python.exe`.
 But however in my Windows environment venv is not working properly, here is how I run it with everything installed in the KiCad's environment.
 ```
-"C:\Program Files\KiCad\8.0\bin\python.exe" -m pip install -r requirements.txt
-"C:\Program Files\KiCad\8.0\bin\python.exe" kikit-ui.py
+"C:\Program Files\KiCad\9.0\bin\python.exe" -m pip install -r requirements.txt
+"C:\Program Files\KiCad\9.0\bin\python.exe" kikit-ui.py
 ```
 
 # CLI Usage
